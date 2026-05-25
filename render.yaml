@@ -7,11 +7,35 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
+      # Supabase (required)
       - key: NEXT_PUBLIC_SUPABASE_URL
+        sync: false
+      - key: NEXT_PUBLIC_SUPABASE_ANON_KEY
         sync: false
       - key: SUPABASE_SERVICE_ROLE_KEY
         sync: false
-      - key: AI_PROVIDER
+      # App URL — set this to your Render service URL after first deploy
+      - key: NEXT_PUBLIC_APP_URL
         sync: false
+      # AI providers
+      # Set AI_PROVIDER to "llama" to use a local llama-server exposed via ngrok,
+      # or "google" to use Google Generative AI directly.
+      # When AI_PROVIDER=llama, the app falls back to Google AI if llama is unreachable.
+      - key: AI_PROVIDER
+        value: google
       - key: GOOGLE_GENERATIVE_AI_API_KEY
+        sync: false
+      # Required only when AI_PROVIDER=llama:
+      # Run `npx ngrok http 8080` on your local machine and paste the HTTPS URL here.
+      - key: LLAMA_SERVER_BASE_URL
+        sync: false
+      - key: LLAMA_MODEL
+        value: llama3
+      # n8n automation (optional)
+      - key: N8N_WEBHOOK_URL
+        sync: false
+      - key: N8N_WEBHOOK_SECRET
+        sync: false
+      # Cron (optional)
+      - key: CRON_SECRET
         sync: false

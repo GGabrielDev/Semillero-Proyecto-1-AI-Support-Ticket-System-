@@ -3,14 +3,18 @@
 A full-stack support ticket platform built with Next.js, Supabase, TypeScript, Tailwind CSS, and a swappable AI provider layer.
 
 ## Features
+
 - Email/password authentication with Supabase Auth
 - Dashboard metrics for ticket status, priority, and weekly resolution velocity
 - Ticket CRUD, comments, assignment, and status management APIs
 - AI-powered ticket analysis, reply suggestions, pending AI actions, and observability
+- AI provider **fallback**: tries the local llama-server first, automatically falls back to Google Generative AI if the server is unreachable
 - Admin user management and AI event auditing views
 - n8n webhook stubs for ticket-created, high-priority, and daily-summary automations
+- **Interactive startup check**: running `npm run dev` or `npm start` without required environment variables will prompt you to enter them, or print a clear error in CI/Render environments
 
 ## Tech Stack
+
 - Next.js App Router
 - TypeScript
 - Tailwind CSS
@@ -18,28 +22,176 @@ A full-stack support ticket platform built with Next.js, Supabase, TypeScript, T
 - AI SDK + Google Generative AI or llama-server
 - n8n webhooks (optional)
 
-## Getting Started
-1. Copy `.env.example` to `.env.local` and fill in your keys.
-2. Install dependencies with `npm install`.
-3. Run Supabase migrations in order: `001_initial_schema.sql`, `002_rls_policies.sql`, `003_ai_enhancements.sql`, `004_categories_notifications.sql`.
-4. Start the app with `npm run dev`.
+---
+
+## Quick Start (local development)
+
+### 1. Prerequisites
+
+- Node.js 18+
+- A [Supabase](https://supabase.com) project (free tier works)
+- One of the following AI backends (see [AI Provider Setup](#ai-provider-setup)):
+  - A **Google Generative AI** API key (easiest), **or**
+  - A locally running **llama-server** instance
+
+### 2. Clone and install
+
+```bash
+git clone https://github.com/<your-org>/ai-support-ticket-system.git
+cd ai-support-ticket-system
+npm install
+```
+
+### 3. Configure environment variables
+
+```bash
+cp .env.example .env.local
+```
+
+Open `.env.local` and fill in the values as described in the [Environment Variables](#environment-variables) table below.
+
+> **Tip:** You can skip this step. When you run `npm run dev` for the first time, the startup script will detect missing required variables and **interactively prompt you** to enter them. The values are saved to `.env.local` automatically.
+
+### 4. Run Supabase migrations
+
+In your Supabase project's **SQL Editor**, run the migration files in order:
+
+```
+supabase/migrations/001_initial_schema.sql
+supabase/migrations/002_rls_policies.sql
+supabase/migrations/003_ai_enhancements.sql
+supabase/migrations/004_categories_notifications.sql
+supabase/migrations/005_priority_order.sql
+```
+
+### 5. Start the development server
+
+```bash
+npm run dev
+```
+
+The startup script runs first. If any required environment variables are missing it will prompt you to enter them before Next.js starts.
+
+---
+
+## AI Provider Setup
+
+The app supports two AI backends, selectable via the `AI_PROVIDER` environment variable. It will **automatically fall back to Google AI** if the llama-server is unreachable.
+
+### Option A — Google Generative AI (recommended for quick start)
+
+1. Get a free API key at <https://aistudio.google.com/app/apikey>.
+2. Set in `.env.local`:
+   ```
+   AI_PROVIDER=google
+   GOOGLE_GENERATIVE_AI_API_KEY=your_key_here
+   ```
+
+### Option B — Local llama-server
+
+Use this to run inference on your own hardware. The Render-hosted instance can still reach your local model by using a tunnel (see below).
+
+#### 2a. Install and run llama-server
+
+Using [llama.cpp](https://github.com/ggerganov/llama.cpp):
+
+```bash
+# Build llama.cpp (or download a pre-built binary)
+git clone https://github.com/ggerganov/llama.cpp && cd llama.cpp
+cmake -B build && cmake --build build -j
+
+# Download a GGUF model (e.g. Llama-3 8B)
+# Then start the server on port 8080:
+./build/bin/llama-server -m /path/to/model.gguf --port 8080
+```
+
+The server exposes an **OpenAI-compatible** `/v1/chat/completions` endpoint.
+
+Set in `.env.local` for local development:
+
+```
+AI_PROVIDER=llama
+LLAMA_SERVER_BASE_URL=http://localhost:8080
+LLAMA_MODEL=llama3
+```
+
+#### 2b. Expose your local server to Render with ngrok
+
+For the Render-hosted frontend/backend to reach your local llama-server, you need a public tunnel:
+
+```bash
+npx ngrok http 8080
+```
+
+ngrok prints a forwarding URL such as `https://xxxx-xx-xx.ngrok-free.app`. Copy that URL and set it in your **Render environment variables** (Dashboard → Service → Environment):
+
+```
+AI_PROVIDER=llama
+LLAMA_SERVER_BASE_URL=https://xxxx-xx-xx.ngrok-free.app
+```
+
+> **Important:** ngrok free-tier URLs change every time you restart the tunnel. Update `LLAMA_SERVER_BASE_URL` in Render whenever the URL changes, or upgrade to a paid ngrok plan for a stable domain.
+
+#### 2c. Fallback to Google AI
+
+Set `GOOGLE_GENERATIVE_AI_API_KEY` in addition to the llama settings. If the llama-server is unreachable (e.g., your machine is offline), the app will **automatically fall back** to Google Generative AI and log a warning in the server console:
+
+```
+[AI] llama-server at https://... failed (…). Falling back to Google Generative AI (gemini-1.5-flash).
+```
+
+If neither provider is configured, the server logs an actionable error and the AI endpoint returns a 500 with setup instructions.
+
+---
+
+## Deploying to Render
+
+### 1. Connect the repository
+
+In the Render dashboard, create a new **Web Service** and connect this repository. Render will detect `render.yaml` and pre-populate the service settings.
+
+### 2. Set environment variables
+
+Go to your service's **Environment** tab and fill in all variables marked `sync: false` in `render.yaml`. The required ones are:
+
+| Variable | Value |
+| --- | --- |
+| `NEXT_PUBLIC_SUPABASE_URL` | Your Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon key |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service-role key |
+| `NEXT_PUBLIC_APP_URL` | Your Render service URL (e.g. `https://your-app.onrender.com`) |
+| `AI_PROVIDER` | `google` or `llama` |
+| `GOOGLE_GENERATIVE_AI_API_KEY` | Google AI key (required for google provider or as fallback) |
+| `LLAMA_SERVER_BASE_URL` | ngrok URL of your local llama-server (only when `AI_PROVIDER=llama`) |
+
+> If `GOOGLE_GENERATIVE_AI_API_KEY` is missing, Render's build log and startup log will print a clear warning. AI features will be disabled until it is set.
+
+### 3. Deploy
+
+Trigger a deploy. The `npm start` script runs the env check before Next.js starts. In non-interactive (CI) mode it will **exit 1** if any required variable is absent, showing exactly which ones are missing.
+
+---
 
 ## Environment Variables
+
 | Variable | Required | Description |
 | --- | --- | --- |
-| `NEXT_PUBLIC_SUPABASE_URL` | Yes | Supabase project URL |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Yes | Supabase anonymous key |
-| `SUPABASE_SERVICE_ROLE_KEY` | Yes | Service-role key for admin routes, AI logging, cron, and migrations |
-| `AI_PROVIDER` | Yes | `google` or `llama` |
-| `GOOGLE_GENERATIVE_AI_API_KEY` | When `AI_PROVIDER=google` | Google Generative AI key |
+| `NEXT_PUBLIC_SUPABASE_URL` | ✅ Yes | Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | ✅ Yes | Supabase anonymous key |
+| `SUPABASE_SERVICE_ROLE_KEY` | ✅ Yes | Service-role key for admin routes, AI logging, cron, and migrations |
+| `NEXT_PUBLIC_APP_URL` | ✅ Yes | Public app URL for redirects and links |
+| `AI_PROVIDER` | ✅ Yes | `google` or `llama` (defaults to `google`) |
+| `GOOGLE_GENERATIVE_AI_API_KEY` | ⚠ Recommended | Google Generative AI key — required for the `google` provider and used as automatic fallback when `llama` is unreachable |
 | `LLAMA_SERVER_BASE_URL` | When `AI_PROVIDER=llama` | Base URL for the llama-server OpenAI-compatible endpoint |
-| `LLAMA_MODEL` | When `AI_PROVIDER=llama` | Llama model name sent to the server |
+| `LLAMA_MODEL` | No | Llama model name sent to the server (default: `llama3`) |
 | `N8N_WEBHOOK_URL` | Optional | Outbound n8n webhook URL for automation triggers |
 | `N8N_WEBHOOK_SECRET` | Optional | Shared secret for inbound `/api/webhooks/n8n` requests |
 | `CRON_SECRET` | Optional | Bearer token used by `/api/cron/daily-summary` |
-| `NEXT_PUBLIC_APP_URL` | Yes | Public app URL for redirects and links |
+
+---
 
 ## API Endpoints
+
 | Endpoint | Method(s) | Description |
 | --- | --- | --- |
 | `/api/tickets` | `GET`, `POST` | List tickets or create a new ticket |
@@ -54,24 +206,39 @@ A full-stack support ticket platform built with Next.js, Supabase, TypeScript, T
 | `/api/admin/ai-events` | `GET` | Agent/admin paginated AI event audit feed |
 | `/api/webhooks/n8n` | `POST` | Inbound n8n acknowledgement webhook secured by `N8N_WEBHOOK_SECRET` |
 | `/api/cron/daily-summary` | `GET` | Bearer-protected daily summary trigger that sends current open ticket stats to n8n |
+| `/api/notifications` | `GET`, `PATCH` | List unread notifications or mark all as read |
+
+---
 
 ## n8n Setup
+
 Configure three workflows and point them to the app/webhook URLs you expose:
-1. **Ticket created**: Receive the `ticket_created` event from `N8N_WEBHOOK_URL` and send acknowledgements or Slack messages.
-2. **High-priority ticket**: Receive the `high_priority_ticket` event and notify on-call/ops teams.
-3. **Daily summary**: Trigger `/api/cron/daily-summary` on a schedule with `Authorization: Bearer {CRON_SECRET}` and consume the outbound `daily_summary` payload.
+
+1. **Ticket created** — Receive the `ticket_created` event from `N8N_WEBHOOK_URL` and send an email confirmation or Slack message.
+2. **High-priority ticket** — Receive the `high_priority_ticket` event and notify on-call/ops teams via Slack or PagerDuty.
+3. **Daily summary** — Trigger `/api/cron/daily-summary` on a schedule with `Authorization: Bearer {CRON_SECRET}` and consume the outbound `daily_summary` payload.
 
 For inbound callbacks to `/api/webhooks/n8n`, send the shared secret in the `x-webhook-secret` header.
 
+> When `N8N_WEBHOOK_URL` is not set, the app silently skips all outbound webhook calls. A startup warning will remind you.
+
+---
+
 ## Database Notes
+
 - `tickets.ai_analysis_json` stores the full structured AI analysis result for observability.
-- `ai_events` now stores prompt text, model version, and full result payloads.
-- `tickets.category` intentionally remains a text column for backward compatibility; it should map to `categories.name` in the application layer.
+- `ai_events` stores prompt text, model version, latency, and full result payloads.
+- `tickets.category` intentionally remains a text column for backward compatibility; it maps to `categories.name` in the application layer.
+
+---
 
 ## Deploy Checklist
-- Set all required Vercel environment variables from the table above.
-- Run Supabase migrations in order: `001`, `002`, `003`, `004`.
-- Ensure `SUPABASE_SERVICE_ROLE_KEY` is present in deployment environments so admin routes, cron, and AI logging work.
-- Configure `N8N_WEBHOOK_URL` to the public n8n webhook endpoint.
-- Configure n8n scheduled jobs or platform cron to call `/api/cron/daily-summary` with `CRON_SECRET`.
-- If you expose inbound n8n callbacks, configure `N8N_WEBHOOK_SECRET` on both sides.
+
+- [ ] Run all Supabase migrations in order: `001`, `002`, `003`, `004`, `005`.
+- [ ] Set all required Render environment variables from the table above.
+- [ ] Set `NEXT_PUBLIC_APP_URL` to your Render service URL.
+- [ ] Set `GOOGLE_GENERATIVE_AI_API_KEY` — required for Google AI and as llama fallback.
+- [ ] If using llama: start `ngrok http 8080` locally and set `LLAMA_SERVER_BASE_URL` in Render.
+- [ ] Configure `N8N_WEBHOOK_URL` to the public n8n webhook endpoint (optional).
+- [ ] Configure n8n scheduled jobs or platform cron to call `/api/cron/daily-summary` with `CRON_SECRET` (optional).
+- [ ] If you expose inbound n8n callbacks, configure `N8N_WEBHOOK_SECRET` on both sides (optional).

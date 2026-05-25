@@ -88,9 +88,34 @@ async function runLlamaPrompt(system: string, prompt: string) {
 }
 
 async function complete(system: string, prompt: string) {
-  return getAiProviderName() === 'llama'
-    ? runLlamaPrompt(system, prompt)
-    : runGooglePrompt(system, prompt);
+  if (getAiProviderName() === 'llama') {
+    try {
+      return await runLlamaPrompt(system, prompt);
+    } catch (err) {
+      const hasGoogleKey = Boolean(process.env.GOOGLE_GENERATIVE_AI_API_KEY);
+      const llamaUrl = process.env.LLAMA_SERVER_BASE_URL ?? 'http://localhost:8080';
+
+      if (hasGoogleKey) {
+        console.warn(
+          `[AI] llama-server at ${llamaUrl} failed (${(err as Error).message}). ` +
+            `Falling back to Google Generative AI (${GOOGLE_MODEL}).`,
+        );
+        return runGooglePrompt(system, prompt);
+      }
+
+      console.error(
+        `[AI] llama-server at ${llamaUrl} failed and GOOGLE_GENERATIVE_AI_API_KEY is not set. ` +
+          `Set GOOGLE_GENERATIVE_AI_API_KEY (https://aistudio.google.com/app/apikey) ` +
+          `to enable the fallback provider.`,
+      );
+      throw new Error(
+        'AI provider unavailable: llama-server is unreachable and no Google API key is configured. ' +
+          'Set GOOGLE_GENERATIVE_AI_API_KEY to enable the fallback provider.',
+      );
+    }
+  }
+
+  return runGooglePrompt(system, prompt);
 }
 
 export function getAiProviderName(): AiProviderName {
