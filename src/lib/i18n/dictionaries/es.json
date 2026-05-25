@@ -1,0 +1,56 @@
+{
+  "common": {
+    "language": "Idioma",
+    "english": "Inglés",
+    "spanish": "Español"
+  },
+  "home": {
+    "tagline": "Soporte con IA",
+    "title": "Resuelve tickets de soporte más rápido con triaje asistido por IA.",
+    "description": "Centraliza incidencias entrantes, asigna responsables, resume contexto y genera respuestas personalizadas desde un solo panel.",
+    "signIn": "Iniciar sesión",
+    "createAccount": "Crear cuenta",
+    "whatYouGet": "Qué obtienes",
+    "benefit1": "Autenticación con Supabase y gestión de tickets con PostgreSQL",
+    "benefit2": "Resumen, priorización y sugerencias de respuesta con IA",
+    "benefit3": "Rutas API seguras con validación Zod y acceso de datos compatible con RLS",
+    "benefit4": "Despliegue listo para Vercel con configuración opcional de Render",
+    "footer": "Configura Google Generative AI o un endpoint local de llama-server sin cambiar la interfaz."
+  },
+  "auth": {
+    "welcomeBack": "Bienvenido de nuevo",
+    "signIn": "Iniciar sesión",
+    "accessWorkspace": "Accede a tu espacio de soporte.",
+    "email": "Correo electrónico",
+    "password": "Contraseña",
+    "needAccount": "¿Necesitas una cuenta?",
+    "createOne": "Crear una",
+    "getStarted": "Comienza ahora",
+    "createAccount": "Crear cuenta",
+    "setupAccess": "Configura el acceso a tu espacio de soporte.",
+    "fullName": "Nombre completo",
+    "alreadyAccount": "¿Ya tienes una cuenta?",
+    "accountCreated": "Cuenta creada. Revisa tu bandeja de entrada si la confirmación por correo está habilitada, o continúa para iniciar sesión."
+  },
+  "header": {
+    "welcomeBack": "Bienvenido de nuevo",
+    "signOut": "Cerrar sesión"
+  },
+  "sidebar": {
+    "brand": "Soporte IA",
+    "title": "Centro de Tickets",
+    "role": "Rol",
+    "overview": "Resumen",
+    "tickets": "Tickets",
+    "newTicket": "Nuevo ticket",
+    "aiEvents": "Eventos IA",
+    "admin": "Administración"
+  },
+  "notifications": {
+    "label": "Notificaciones",
+    "unreadSuffix": "{{count}} sin leer",
+    "marking": "Marcando…",
+    "markAllRead": "Marcar todo como leído",
+    "none": "Aún no hay notificaciones."
+  }
+}

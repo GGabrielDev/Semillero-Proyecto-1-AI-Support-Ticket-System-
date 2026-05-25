@@ -10,6 +10,7 @@ import { z } from 'zod';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
+import { useI18n } from '@/lib/i18n/I18nProvider';
 import { createClient } from '@/lib/supabase/client';
 import { LoginSchema } from '@/lib/validations';
 
@@ -17,6 +18,7 @@ type LoginValues = z.infer<typeof LoginSchema>;
 
 export default function LoginPage() {
   const router = useRouter();
+  const { t } = useI18n();
   const [error, setError] = useState<string | null>(null);
   const {
     register,
@@ -43,15 +45,15 @@ export default function LoginPage() {
   return (
     <Card className="space-y-6">
       <div>
-        <p className="text-sm font-semibold uppercase tracking-[0.3em] text-sky-300">Welcome back</p>
-        <h1 className="mt-3 text-3xl font-semibold text-white">Sign in</h1>
-        <p className="mt-2 text-sm text-slate-400">Access your support workspace.</p>
+        <p className="text-sm font-semibold uppercase tracking-[0.3em] text-sky-300">{t('auth.welcomeBack')}</p>
+        <h1 className="mt-3 text-3xl font-semibold text-white">{t('auth.signIn')}</h1>
+        <p className="mt-2 text-sm text-slate-400">{t('auth.accessWorkspace')}</p>
       </div>
 
       <form className="space-y-4" onSubmit={onSubmit}>
         <div className="space-y-2">
           <label className="text-sm font-medium text-slate-200" htmlFor="email">
-            Email
+            {t('auth.email')}
           </label>
           <Input id="email" type="email" {...register('email')} />
           {errors.email ? <p className="text-sm text-rose-300">{errors.email.message}</p> : null}
@@ -59,7 +61,7 @@ export default function LoginPage() {
 
         <div className="space-y-2">
           <label className="text-sm font-medium text-slate-200" htmlFor="password">
-            Password
+            {t('auth.password')}
           </label>
           <Input id="password" type="password" {...register('password')} />
           {errors.password ? <p className="text-sm text-rose-300">{errors.password.message}</p> : null}
@@ -68,14 +70,14 @@ export default function LoginPage() {
         {error ? <p className="text-sm text-rose-300">{error}</p> : null}
 
         <Button className="w-full" isLoading={isSubmitting} type="submit">
-          Sign in
+          {t('auth.signIn')}
         </Button>
       </form>
 
       <p className="text-sm text-slate-400">
-        Need an account?{' '}
+        {t('auth.needAccount')}{' '}
         <Link className="text-sky-300 hover:text-sky-200" href="/register">
-          Create one
+          {t('auth.createOne')}
         </Link>
       </p>
     </Card>

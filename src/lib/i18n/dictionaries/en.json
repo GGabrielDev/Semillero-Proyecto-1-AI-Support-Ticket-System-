@@ -1,0 +1,56 @@
+{
+  "common": {
+    "language": "Language",
+    "english": "English",
+    "spanish": "Spanish"
+  },
+  "home": {
+    "tagline": "AI-first support",
+    "title": "Resolve support tickets faster with guided AI triage.",
+    "description": "Centralize inbound issues, assign owners, summarize context, and generate tailored customer replies from one dashboard.",
+    "signIn": "Sign in",
+    "createAccount": "Create account",
+    "whatYouGet": "What you get",
+    "benefit1": "Supabase auth and PostgreSQL-backed ticket management",
+    "benefit2": "AI summary, prioritization, and reply suggestions",
+    "benefit3": "Secure API routes with Zod validation and RLS-friendly data access",
+    "benefit4": "Vercel-ready deployment with optional Render service config",
+    "footer": "Configure either Google Generative AI or a local llama-server endpoint without changing the UI."
+  },
+  "auth": {
+    "welcomeBack": "Welcome back",
+    "signIn": "Sign in",
+    "accessWorkspace": "Access your support workspace.",
+    "email": "Email",
+    "password": "Password",
+    "needAccount": "Need an account?",
+    "createOne": "Create one",
+    "getStarted": "Get started",
+    "createAccount": "Create account",
+    "setupAccess": "Set up your support workspace access.",
+    "fullName": "Full name",
+    "alreadyAccount": "Already have an account?",
+    "accountCreated": "Account created. Check your inbox if email confirmation is enabled, or continue to sign in."
+  },
+  "header": {
+    "welcomeBack": "Welcome back",
+    "signOut": "Sign out"
+  },
+  "sidebar": {
+    "brand": "AI Support",
+    "title": "Ticket Hub",
+    "role": "Role",
+    "overview": "Overview",
+    "tickets": "Tickets",
+    "newTicket": "New Ticket",
+    "aiEvents": "AI Events",
+    "admin": "Admin"
+  },
+  "notifications": {
+    "label": "Notifications",
+    "unreadSuffix": "{{count}} unread",
+    "marking": "Marking…",
+    "markAllRead": "Mark all read",
+    "none": "No notifications yet."
+  }
+}

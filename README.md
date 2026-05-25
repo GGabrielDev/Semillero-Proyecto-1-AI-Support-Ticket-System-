@@ -12,6 +12,7 @@ A full-stack support ticket platform built with Next.js, Supabase, TypeScript, T
 - Admin user management and AI event auditing views
 - n8n webhook stubs for ticket-created, high-priority, and daily-summary automations
 - **Interactive startup check**: running `npm run dev` or `npm start` without required environment variables will prompt you to enter them, or print a clear error in CI/Render environments
+- Built-in i18n with English default and Spanish translation support
 
 ## Tech Stack
 
@@ -207,6 +208,18 @@ Trigger a deploy. The `npm start` script runs the env check before Next.js start
 | `/api/webhooks/n8n` | `POST` | Inbound n8n acknowledgement webhook secured by `N8N_WEBHOOK_SECRET` |
 | `/api/cron/daily-summary` | `GET` | Bearer-protected daily summary trigger that sends current open ticket stats to n8n |
 | `/api/notifications` | `GET`, `PATCH` | List unread notifications or mark all as read |
+
+---
+
+## Internationalization (i18n)
+
+- Default locale: `en`
+- Supported locales: `en`, `es`
+- Translation files:
+  - `src/lib/i18n/dictionaries/en.json`
+  - `src/lib/i18n/dictionaries/es.json`
+
+The selected locale is stored in a `locale` cookie and can be changed from the language selector in the header.
 
 ---
 

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import { useI18n } from '@/lib/i18n/I18nProvider';
 import { formatDate } from '@/lib/utils';
 
 type Notification = {
@@ -15,6 +16,7 @@ type Notification = {
 };
 
 export function NotificationBell() {
+  const { t } = useI18n();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
@@ -77,7 +79,9 @@ export function NotificationBell() {
   return (
     <div className="relative" ref={panelRef}>
       <button
-        aria-label={`Notifications${unreadCount > 0 ? ` — ${unreadCount} unread` : ''}`}
+        aria-label={`${t('notifications.label')}${
+          unreadCount > 0 ? ` — ${t('notifications.unreadSuffix', { count: unreadCount })}` : ''
+        }`}
         className="relative flex h-11 w-11 items-center justify-center rounded-full border border-slate-700 bg-slate-900 text-slate-200 transition hover:bg-slate-800"
         onClick={() => setIsOpen((open) => !open)}
         type="button"
@@ -107,7 +111,7 @@ export function NotificationBell() {
       {isOpen ? (
         <div className="absolute right-0 top-14 z-50 w-80 rounded-2xl border border-slate-700 bg-slate-900 shadow-2xl">
           <div className="flex items-center justify-between border-b border-slate-800 px-4 py-3">
-            <p className="text-sm font-semibold text-white">Notifications</p>
+            <p className="text-sm font-semibold text-white">{t('notifications.label')}</p>
             {unreadCount > 0 ? (
               <button
                 className="text-xs text-sky-300 hover:text-sky-200 disabled:opacity-50"
@@ -115,14 +119,14 @@ export function NotificationBell() {
                 onClick={() => void markAllRead()}
                 type="button"
               >
-                {isMarkingRead ? 'Marking…' : 'Mark all read'}
+                {isMarkingRead ? t('notifications.marking') : t('notifications.markAllRead')}
               </button>
             ) : null}
           </div>
 
           <div className="max-h-80 overflow-y-auto">
             {notifications.length === 0 ? (
-              <p className="p-5 text-sm text-slate-400">No notifications yet.</p>
+              <p className="p-5 text-sm text-slate-400">{t('notifications.none')}</p>
             ) : (
               <ul>
                 {notifications.map((notification) => (

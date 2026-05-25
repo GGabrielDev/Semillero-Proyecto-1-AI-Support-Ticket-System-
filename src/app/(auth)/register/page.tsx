@@ -10,6 +10,7 @@ import { z } from 'zod';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
+import { useI18n } from '@/lib/i18n/I18nProvider';
 import { createClient } from '@/lib/supabase/client';
 import { RegisterSchema } from '@/lib/validations';
 
@@ -17,6 +18,7 @@ type RegisterValues = z.infer<typeof RegisterSchema>;
 
 export default function RegisterPage() {
   const router = useRouter();
+  const { t } = useI18n();
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const {
@@ -48,7 +50,7 @@ export default function RegisterPage() {
       return;
     }
 
-    setMessage('Account created. Check your inbox if email confirmation is enabled, or continue to sign in.');
+    setMessage(t('auth.accountCreated'));
     router.push('/login');
     router.refresh();
   });
@@ -56,15 +58,15 @@ export default function RegisterPage() {
   return (
     <Card className="space-y-6">
       <div>
-        <p className="text-sm font-semibold uppercase tracking-[0.3em] text-sky-300">Get started</p>
-        <h1 className="mt-3 text-3xl font-semibold text-white">Create account</h1>
-        <p className="mt-2 text-sm text-slate-400">Set up your support workspace access.</p>
+        <p className="text-sm font-semibold uppercase tracking-[0.3em] text-sky-300">{t('auth.getStarted')}</p>
+        <h1 className="mt-3 text-3xl font-semibold text-white">{t('auth.createAccount')}</h1>
+        <p className="mt-2 text-sm text-slate-400">{t('auth.setupAccess')}</p>
       </div>
 
       <form className="space-y-4" onSubmit={onSubmit}>
         <div className="space-y-2">
           <label className="text-sm font-medium text-slate-200" htmlFor="full_name">
-            Full name
+            {t('auth.fullName')}
           </label>
           <Input id="full_name" {...register('full_name')} />
           {errors.full_name ? <p className="text-sm text-rose-300">{errors.full_name.message}</p> : null}
@@ -72,7 +74,7 @@ export default function RegisterPage() {
 
         <div className="space-y-2">
           <label className="text-sm font-medium text-slate-200" htmlFor="email">
-            Email
+            {t('auth.email')}
           </label>
           <Input id="email" type="email" {...register('email')} />
           {errors.email ? <p className="text-sm text-rose-300">{errors.email.message}</p> : null}
@@ -80,7 +82,7 @@ export default function RegisterPage() {
 
         <div className="space-y-2">
           <label className="text-sm font-medium text-slate-200" htmlFor="password">
-            Password
+            {t('auth.password')}
           </label>
           <Input id="password" type="password" {...register('password')} />
           {errors.password ? <p className="text-sm text-rose-300">{errors.password.message}</p> : null}
@@ -90,14 +92,14 @@ export default function RegisterPage() {
         {message ? <p className="text-sm text-emerald-300">{message}</p> : null}
 
         <Button className="w-full" isLoading={isSubmitting} type="submit">
-          Create account
+          {t('auth.createAccount')}
         </Button>
       </form>
 
       <p className="text-sm text-slate-400">
-        Already have an account?{' '}
+        {t('auth.alreadyAccount')}{' '}
         <Link className="text-sky-300 hover:text-sky-200" href="/login">
-          Sign in
+          {t('auth.signIn')}
         </Link>
       </p>
     </Card>
