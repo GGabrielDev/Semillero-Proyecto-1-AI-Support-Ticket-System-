@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: ai-support-backend
+    runtime: node
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NEXT_PUBLIC_SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: AI_PROVIDER
+        sync: false
+      - key: GOOGLE_GENERATIVE_AI_API_KEY
+        sync: false

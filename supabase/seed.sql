@@ -1,0 +1,28 @@
+-- Development seed instructions
+--
+-- 1. Create users from the Supabase dashboard or via auth signup in the app.
+-- 2. After users exist, replace the UUID placeholders below with real auth.users IDs.
+-- 3. Run this file in the Supabase SQL editor.
+--
+-- Example profile role updates:
+-- update public.profiles
+-- set role = 'agent'
+-- where email = 'agent@example.com';
+--
+-- Example tickets:
+-- insert into public.tickets (title, description, category, priority, created_by)
+-- values
+--   (
+--     'Unable to access billing page',
+--     'The billing page returns a blank screen after login and prevents invoice downloads.',
+--     'billing',
+--     'high',
+--     '00000000-0000-0000-0000-000000000000'
+--   ),
+--   (
+--     'Password reset email not received',
+--     'A customer has attempted multiple password resets but no email has been delivered.',
+--     'authentication',
+--     'medium',
+--     '00000000-0000-0000-0000-000000000000'
+--   );
