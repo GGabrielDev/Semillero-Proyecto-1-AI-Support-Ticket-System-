@@ -66,13 +66,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ suggestion });
     }
 
-    const suggestion = await suggestReply(
-      parsed.data.title!,
-      parsed.data.description!,
-      parsed.data.comments,
-    );
+    const suggestion = await suggestReply(parsed.data.title!, parsed.data.description!, parsed.data.comments);
 
-    return NextResponse.json({ suggestion });
+    return NextResponse.json({ suggestion: suggestion.result });
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Unable to generate suggestion.' },

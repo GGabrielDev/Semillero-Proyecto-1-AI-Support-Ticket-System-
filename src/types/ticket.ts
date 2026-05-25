@@ -3,6 +3,7 @@ import type { AppUser } from '@/types/user';
 
 export type TicketStatus = Database['public']['Tables']['tickets']['Row']['status'];
 export type TicketPriority = Database['public']['Tables']['tickets']['Row']['priority'];
+export type AiPendingAction = Database['public']['Tables']['ai_pending_actions']['Row'];
 
 export interface TicketComment {
   id: string;

@@ -6,14 +6,15 @@ import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import type { UserRole } from '@/types/user';
 
-const links = [
-  { href: '/dashboard', label: 'Overview' },
-  { href: '/tickets', label: 'Tickets' },
-  { href: '/tickets/new', label: 'New Ticket' },
-];
-
 export function Sidebar({ role }: { role: UserRole }) {
   const pathname = usePathname();
+  const links = [
+    { href: '/dashboard', label: 'Overview' },
+    { href: '/tickets', label: 'Tickets' },
+    { href: '/tickets/new', label: 'New Ticket' },
+    ...(role === 'agent' || role === 'admin' ? [{ href: '/admin/ai-events', label: 'AI Events' }] : []),
+    ...(role === 'admin' ? [{ href: '/admin/users', label: 'Admin' }] : []),
+  ];
 
   return (
     <aside className="flex w-full flex-col border-b border-slate-800 bg-slate-950 px-6 py-6 lg:min-h-screen lg:w-72 lg:border-b-0 lg:border-r">

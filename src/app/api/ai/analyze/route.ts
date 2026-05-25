@@ -56,7 +56,7 @@ export async function POST(request: Request) {
     }
 
     const analysis = await analyzeTicket(parsed.data.title!, parsed.data.description!);
-    return NextResponse.json({ analysis });
+    return NextResponse.json({ analysis: analysis.result });
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Unable to analyze ticket.' },

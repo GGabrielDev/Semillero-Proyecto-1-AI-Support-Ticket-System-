@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { persistTicketAnalysis } from '@/lib/ai/service';
+import { triggerN8nWorkflow } from '@/lib/n8n';
 import { createClient } from '@/lib/supabase/server';
 import { CreateTicketSchema, TicketPrioritySchema, TicketStatusSchema } from '@/lib/validations';
 import { toSearchPattern } from '@/lib/utils';
@@ -96,6 +97,13 @@ export async function POST(request: Request) {
   }
 
   const ticket = data as Ticket;
+
+  void triggerN8nWorkflow('ticket_created', {
+    ticketId: ticket.id,
+    title: ticket.title,
+    priority: ticket.priority,
+    createdBy: ticket.created_by ?? user.id,
+  });
 
   void persistTicketAnalysis(ticket.id, ticket.title, ticket.description).catch((caughtError) => {
     console.error('AI analysis failed after ticket creation:', caughtError);

@@ -2,15 +2,37 @@ import { google } from '@ai-sdk/google';
 import { generateText } from 'ai';
 import { z } from 'zod';
 
-import type { AnalyzeTicketResult, AiProviderName } from '@/lib/ai/types';
+import type {
+  AiAnalysisResult,
+  AiProviderName,
+  AnalyzeTicketResponse,
+  SuggestReplyResponse,
+} from '@/lib/ai/types';
 
-const AnalyzeResponseSchema = z.object({
-  priority: z.enum(['low', 'medium', 'high', 'critical']),
+const GOOGLE_MODEL = 'gemini-1.5-flash';
+
+const AiAnalysisSchema = z.object({
   summary: z.string().min(10),
+  classification: z.object({
+    priority: z.enum(['low', 'medium', 'high', 'critical']),
+    sentiment: z.enum(['positive', 'neutral', 'negative', 'frustrated']),
+    category: z.string().min(2),
+  }),
+  suggestions: z.array(z.string().min(3)).length(3),
+  riskLevel: z.enum(['low', 'medium', 'high', 'critical']),
+  nextAction: z.enum(['assign', 'escalate', 'close', 'request_info', 'monitor']),
 });
 
 function stripCodeFences(value: string) {
   return value.replace(/^```(?:json)?\s*|\s*```$/g, '').trim();
+}
+
+function parseJsonPayload(raw: string): unknown {
+  try {
+    return JSON.parse(stripCodeFences(raw));
+  } catch {
+    throw new Error('AI provider returned malformed JSON.');
+  }
 }
 
 async function runGooglePrompt(system: string, prompt: string) {
@@ -19,18 +41,21 @@ async function runGooglePrompt(system: string, prompt: string) {
   }
 
   const { text } = await generateText({
-    model: google('gemini-1.5-flash'),
+    model: google(GOOGLE_MODEL),
     system,
     prompt,
     temperature: 0.2,
   });
 
-  return text;
+  return {
+    text,
+    modelVersion: GOOGLE_MODEL,
+  };
 }
 
 async function runLlamaPrompt(system: string, prompt: string) {
   const baseUrl = (process.env.LLAMA_SERVER_BASE_URL ?? 'http://localhost:8080').replace(/\/$/, '');
-  const model = process.env.LLAMA_MODEL ?? 'llama3';
+  const modelVersion = process.env.LLAMA_MODEL ?? 'llama3';
 
   const response = await fetch(`${baseUrl}/v1/chat/completions`, {
     method: 'POST',
@@ -38,7 +63,7 @@ async function runLlamaPrompt(system: string, prompt: string) {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model,
+      model: modelVersion,
       messages: [
         { role: 'system', content: system },
         { role: 'user', content: prompt },
@@ -55,7 +80,10 @@ async function runLlamaPrompt(system: string, prompt: string) {
     choices?: Array<{ message?: { content?: string } }>;
   };
 
-  return data.choices?.[0]?.message?.content?.trim() ?? '';
+  return {
+    text: data.choices?.[0]?.message?.content?.trim() ?? '',
+    modelVersion,
+  };
 }
 
 async function complete(system: string, prompt: string) {
@@ -68,35 +96,60 @@ export function getAiProviderName(): AiProviderName {
   return process.env.AI_PROVIDER === 'llama' ? 'llama' : 'google';
 }
 
-export async function analyzeTicket(title: string, description: string): Promise<AnalyzeTicketResult> {
-  const system =
-    'You triage support tickets. Respond with valid JSON only: {"priority":"low|medium|high|critical","summary":"..."}.';
-  const prompt = `Ticket title: ${title}
+export async function analyzeTicket(title: string, description: string): Promise<AnalyzeTicketResponse> {
+  const system = `You triage support tickets. Respond with valid JSON only and no markdown.
+JSON schema:
+{
+  "summary": "short summary",
+  "classification": {
+    "priority": "low|medium|high|critical",
+    "sentiment": "positive|neutral|negative|frustrated",
+    "category": "category name"
+  },
+  "suggestions": ["action 1", "action 2", "action 3"],
+  "riskLevel": "low|medium|high|critical",
+  "nextAction": "assign|escalate|close|request_info|monitor"
+}`;
+  const promptText = `Ticket title: ${title}
 Ticket description: ${description}
 
-Return a concise summary and the most appropriate priority.`;
-  const raw = await complete(system, prompt);
-  const parsed = AnalyzeResponseSchema.safeParse(JSON.parse(stripCodeFences(raw)));
+Return a concise summary, classification, exactly 3 actionable suggestions, a risk level, and the best next action.`;
+  const { text, modelVersion } = await complete(system, promptText);
+  const parsed = AiAnalysisSchema.safeParse(parseJsonPayload(text));
 
   if (!parsed.success) {
     throw new Error('AI provider returned an invalid analysis payload.');
   }
 
-  return parsed.data;
+  return {
+    result: parsed.data as AiAnalysisResult,
+    promptText,
+    modelVersion,
+    provider: getAiProviderName(),
+  };
 }
 
-export async function suggestReply(title: string, description: string, comments: string[]) {
+export async function suggestReply(
+  title: string,
+  description: string,
+  comments: string[],
+): Promise<SuggestReplyResponse> {
   const system =
     'You are a senior support agent. Write a clear, empathetic, professional reply that helps move the ticket toward resolution.';
   const commentsBlock = comments.length ? `- ${comments.join('\n- ')}` : 'No comments yet.';
-  const prompt = `Ticket title: ${title}
+  const promptText = `Ticket title: ${title}
 Ticket description: ${description}
 
 Comments:
 ${commentsBlock}
 
 Draft a reply the support team can send to the requester.`;
-  const raw = await complete(system, prompt);
+  const { text, modelVersion } = await complete(system, promptText);
 
-  return stripCodeFences(raw);
+  return {
+    result: stripCodeFences(text),
+    promptText,
+    modelVersion,
+    provider: getAiProviderName(),
+  };
 }

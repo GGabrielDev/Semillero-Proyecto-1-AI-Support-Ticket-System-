@@ -1,5 +1,7 @@
 import { analyzeTicket, getAiProviderName, suggestReply } from '@/lib/ai/provider';
+import { triggerN8nWorkflow } from '@/lib/n8n';
 import { createAdminClient } from '@/lib/supabase/admin';
+import type { Json } from '@/types/database.types';
 
 async function logAiEvent(input: {
   ticketId?: string;
@@ -7,6 +9,9 @@ async function logAiEvent(input: {
   latencyMs: number;
   success: boolean;
   errorMessage?: string;
+  promptText?: string;
+  modelVersion?: string;
+  resultJson?: Json;
 }) {
   const admin = createAdminClient();
 
@@ -21,6 +26,9 @@ async function logAiEvent(input: {
     latency_ms: input.latencyMs,
     success: input.success,
     error_message: input.errorMessage ?? null,
+    prompt_text: input.promptText ?? null,
+    model_version: input.modelVersion ?? null,
+    result_json: input.resultJson ?? null,
   });
 }
 
@@ -28,15 +36,16 @@ export async function persistTicketAnalysis(ticketId: string, title: string, des
   const startedAt = Date.now();
 
   try {
-    const result = await analyzeTicket(title, description);
+    const analysis = await analyzeTicket(title, description);
     const admin = createAdminClient();
 
     if (admin) {
       await admin
         .from('tickets')
         .update({
-          ai_summary: result.summary,
-          ai_suggested_priority: result.priority,
+          ai_summary: analysis.result.summary,
+          ai_suggested_priority: analysis.result.classification.priority,
+          ai_analysis_json: analysis.result as unknown as Json,
         })
         .eq('id', ticketId);
     }
@@ -46,9 +55,21 @@ export async function persistTicketAnalysis(ticketId: string, title: string, des
       eventType: 'analyze',
       latencyMs: Date.now() - startedAt,
       success: true,
+      promptText: analysis.promptText,
+      modelVersion: analysis.modelVersion,
+      resultJson: analysis.result as unknown as Json,
     });
 
-    return result;
+    if (analysis.result.classification.priority === 'high' || analysis.result.classification.priority === 'critical') {
+      await triggerN8nWorkflow('high_priority_ticket', {
+        ticketId,
+        priority: analysis.result.classification.priority,
+        riskLevel: analysis.result.riskLevel,
+        summary: analysis.result.summary,
+      });
+    }
+
+    return analysis.result;
   } catch (error) {
     await logAiEvent({
       ticketId,
@@ -78,7 +99,7 @@ export async function persistTicketReplySuggestion(
       await admin
         .from('tickets')
         .update({
-          ai_suggested_reply: suggestion,
+          ai_suggested_reply: suggestion.result,
         })
         .eq('id', ticketId);
     }
@@ -88,9 +109,14 @@ export async function persistTicketReplySuggestion(
       eventType: 'suggest_reply',
       latencyMs: Date.now() - startedAt,
       success: true,
+      promptText: suggestion.promptText,
+      modelVersion: suggestion.modelVersion,
+      resultJson: {
+        suggestion: suggestion.result,
+      },
     });
 
-    return suggestion;
+    return suggestion.result;
   } catch (error) {
     await logAiEvent({
       ticketId,
