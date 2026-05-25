@@ -10,26 +10,27 @@ import { toSearchPattern } from '@/lib/utils';
 import type { Ticket } from '@/types/ticket';
 
 type TicketsPageProps = {
-  searchParams: {
+  searchParams: Promise<{
     page?: string;
     status?: string;
     priority?: string;
     q?: string;
-  };
+  }>;
 };
 
 const PAGE_SIZE = 10;
 
 export default async function TicketsPage({ searchParams }: TicketsPageProps) {
-  const page = Number(searchParams.page ?? '1');
+  const resolvedSearchParams = await searchParams;
+  const page = Number(resolvedSearchParams.page ?? '1');
   const currentPage = Number.isNaN(page) || page < 1 ? 1 : page;
-  const statusResult = TicketStatusSchema.safeParse(searchParams.status);
-  const priorityResult = TicketPrioritySchema.safeParse(searchParams.priority);
+  const statusResult = TicketStatusSchema.safeParse(resolvedSearchParams.status);
+  const priorityResult = TicketPrioritySchema.safeParse(resolvedSearchParams.priority);
   const status = statusResult.success ? statusResult.data : undefined;
   const priority = priorityResult.success ? priorityResult.data : undefined;
-  const q = searchParams.q?.trim() || '';
+  const q = resolvedSearchParams.q?.trim() || '';
 
-  const supabase = createClient();
+  const supabase = await createClient();
   let query = supabase
     .from('tickets')
     .select('*', { count: 'exact' })
@@ -125,7 +126,7 @@ export default async function TicketsPage({ searchParams }: TicketsPageProps) {
             className={currentPage <= 1 ? 'pointer-events-none opacity-50' : 'text-sky-300 hover:text-sky-200'}
             href={{
               pathname: '/tickets',
-              query: { ...searchParams, page: String(Math.max(1, currentPage - 1)) },
+              query: { ...resolvedSearchParams, page: String(Math.max(1, currentPage - 1)) },
             }}
           >
             Previous
@@ -134,7 +135,7 @@ export default async function TicketsPage({ searchParams }: TicketsPageProps) {
             className={currentPage >= totalPages ? 'pointer-events-none opacity-50' : 'text-sky-300 hover:text-sky-200'}
             href={{
               pathname: '/tickets',
-              query: { ...searchParams, page: String(Math.min(totalPages, currentPage + 1)) },
+              query: { ...resolvedSearchParams, page: String(Math.min(totalPages, currentPage + 1)) },
             }}
           >
             Next

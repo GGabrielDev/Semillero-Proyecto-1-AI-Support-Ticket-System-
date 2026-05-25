@@ -9,13 +9,13 @@ const ParamsSchema = z.object({
   id: z.string().uuid('Invalid ticket id.'),
 });
 
-export async function GET(_: Request, context: { params: { id: string } }) {
-  const params = ParamsSchema.safeParse(context.params);
+export async function GET(_: Request, context: { params: Promise<{ id: string }> }) {
+  const params = ParamsSchema.safeParse(await context.params);
   if (!params.success) {
     return NextResponse.json({ error: params.error.flatten() }, { status: 400 });
   }
 
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -55,13 +55,13 @@ export async function GET(_: Request, context: { params: { id: string } }) {
   return NextResponse.json({ ticket, comments });
 }
 
-export async function PATCH(request: Request, context: { params: { id: string } }) {
-  const params = ParamsSchema.safeParse(context.params);
+export async function PATCH(request: Request, context: { params: Promise<{ id: string }> }) {
+  const params = ParamsSchema.safeParse(await context.params);
   if (!params.success) {
     return NextResponse.json({ error: params.error.flatten() }, { status: 400 });
   }
 
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -91,13 +91,13 @@ export async function PATCH(request: Request, context: { params: { id: string } 
   return NextResponse.json({ ticket: data as Ticket });
 }
 
-export async function DELETE(_: Request, context: { params: { id: string } }) {
-  const params = ParamsSchema.safeParse(context.params);
+export async function DELETE(_: Request, context: { params: Promise<{ id: string }> }) {
+  const params = ParamsSchema.safeParse(await context.params);
   if (!params.success) {
     return NextResponse.json({ error: params.error.flatten() }, { status: 400 });
   }
 
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

@@ -15,9 +15,10 @@ const priorityClasses = {
   critical: 'border-rose-500/30 bg-rose-500/10 text-rose-200',
 };
 
-export default async function TicketDetailPage({ params }: { params: { id: string } }) {
-  const supabase = createClient();
-  const { data } = await supabase.from('tickets').select('*').eq('id', params.id).maybeSingle();
+export default async function TicketDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const supabase = await createClient();
+  const { data } = await supabase.from('tickets').select('*').eq('id', id).maybeSingle();
   const ticket = (data as Ticket | null) ?? null;
 
   if (!ticket) {
