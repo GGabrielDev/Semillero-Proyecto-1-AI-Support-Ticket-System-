@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
 import { getAuthContext, isAgentOrAdmin } from '@/lib/auth';
+import { triggerN8nWorkflow } from '@/lib/n8n';
+import { createNotification } from '@/lib/notifications';
 import { UpdateTicketSchema } from '@/lib/validations';
 import type { Ticket } from '@/types/ticket';
 
@@ -94,7 +96,31 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ ticket: data as Ticket });
+  const updatedTicket = data as Ticket;
+
+  // Trigger n8n when ticket status changes
+  if (parsed.data.status) {
+    void triggerN8nWorkflow('ticket_status_changed', {
+      ticketId: updatedTicket.id,
+      title: updatedTicket.title,
+      status: updatedTicket.status,
+      priority: updatedTicket.priority,
+      updatedBy: user.id,
+    });
+  }
+
+  // Notify the newly assigned agent
+  if (parsed.data.assigned_to && parsed.data.assigned_to !== user.id) {
+    void createNotification({
+      userId: parsed.data.assigned_to,
+      ticketId: updatedTicket.id,
+      type: 'ticket_assigned',
+      title: `Ticket assigned to you`,
+      body: updatedTicket.title,
+    });
+  }
+
+  return NextResponse.json({ ticket: updatedTicket });
 }
 
 export async function DELETE(_: Request, context: { params: Promise<{ id: string }> }) {

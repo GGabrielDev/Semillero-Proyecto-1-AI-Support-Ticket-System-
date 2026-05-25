@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
 import { getAuthContext, isAgentOrAdmin } from '@/lib/auth';
+import { triggerN8nWorkflow } from '@/lib/n8n';
 import { PendingAiActionDecisionSchema } from '@/lib/validations';
 import type { Database } from '@/types/database.types';
 import type { AiPendingAction, Ticket } from '@/types/ticket';
@@ -108,6 +109,14 @@ export async function PATCH(request: Request, context: { params: Promise<{ actio
   if (updateError) {
     return NextResponse.json({ error: updateError.message }, { status: 500 });
   }
+
+  void triggerN8nWorkflow('ai_action_decided', {
+    actionId: action.id,
+    ticketId: action.ticket_id,
+    actionType: action.action_type,
+    decision: parsed.data.decision,
+    decidedBy: user.id,
+  });
 
   return NextResponse.json({
     action: updatedAction as AiPendingAction,

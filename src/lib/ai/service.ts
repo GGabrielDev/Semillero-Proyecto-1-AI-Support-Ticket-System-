@@ -1,5 +1,6 @@
 import { analyzeTicket, getAiProviderName, suggestReply } from '@/lib/ai/provider';
 import { triggerN8nWorkflow } from '@/lib/n8n';
+import { createNotificationsForAgents } from '@/lib/notifications';
 import { createAdminClient } from '@/lib/supabase/admin';
 import type { Json } from '@/types/database.types';
 
@@ -66,6 +67,29 @@ export async function persistTicketAnalysis(ticketId: string, title: string, des
         priority: analysis.result.classification.priority,
         riskLevel: analysis.result.riskLevel,
         summary: analysis.result.summary,
+      });
+
+      void createNotificationsForAgents({
+        ticketId,
+        type: 'high_priority',
+        title: `High priority ticket detected`,
+        body: `Priority: ${analysis.result.classification.priority} — Risk: ${analysis.result.riskLevel}. ${analysis.result.summary}`,
+      });
+    }
+
+    if (analysis.result.nextAction === 'escalate' || analysis.result.nextAction === 'assign') {
+      await triggerN8nWorkflow('ai_action_required', {
+        ticketId,
+        nextAction: analysis.result.nextAction,
+        summary: analysis.result.summary,
+        riskLevel: analysis.result.riskLevel,
+      });
+
+      void createNotificationsForAgents({
+        ticketId,
+        type: 'ai_action_pending',
+        title: `AI recommends: ${analysis.result.nextAction}`,
+        body: analysis.result.summary,
       });
     }
 

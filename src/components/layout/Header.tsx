@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 import { Button } from '@/components/ui/Button';
+import { NotificationBell } from '@/components/layout/NotificationBell';
 import { createClient } from '@/lib/supabase/client';
 import { getInitials } from '@/lib/utils';
 
@@ -33,6 +34,7 @@ export function Header({ email, fullName }: HeaderProps) {
       </div>
 
       <div className="flex items-center gap-4">
+        <NotificationBell />
         <div className="flex h-11 w-11 items-center justify-center rounded-full border border-slate-700 bg-slate-900 text-sm font-semibold text-slate-200">
           {getInitials(fullName || email)}
         </div>
@@ -43,3 +45,4 @@ export function Header({ email, fullName }: HeaderProps) {
     </header>
   );
 }
+

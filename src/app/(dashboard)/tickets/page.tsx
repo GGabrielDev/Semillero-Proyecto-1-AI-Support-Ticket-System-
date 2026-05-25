@@ -15,6 +15,7 @@ type TicketsPageProps = {
     status?: string;
     priority?: string;
     q?: string;
+    sort?: string;
   }>;
 };
 
@@ -29,13 +30,21 @@ export default async function TicketsPage({ searchParams }: TicketsPageProps) {
   const status = statusResult.success ? statusResult.data : undefined;
   const priority = priorityResult.success ? priorityResult.data : undefined;
   const q = resolvedSearchParams.q?.trim() || '';
+  const sort = resolvedSearchParams.sort === 'priority' ? 'priority' : 'date';
 
   const supabase = await createClient();
   let query = supabase
     .from('tickets')
     .select('*', { count: 'exact' })
-    .order('created_at', { ascending: false })
     .range((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE - 1);
+
+  if (sort === 'priority') {
+    query = query
+      .order('priority_order', { ascending: true })
+      .order('created_at', { ascending: false });
+  } else {
+    query = query.order('created_at', { ascending: false });
+  }
 
   if (status) {
     query = query.eq('status', status);
@@ -112,6 +121,21 @@ export default async function TicketsPage({ searchParams }: TicketsPageProps) {
           </div>
 
           <Button type="submit">Apply filters</Button>
+          <Link
+            href={{
+              pathname: '/tickets',
+              query: {
+                ...Object.fromEntries(
+                  Object.entries(resolvedSearchParams).filter(([k]) => k !== 'sort'),
+                ),
+                sort: sort === 'priority' ? 'date' : 'priority',
+              },
+            }}
+          >
+            <Button type="button" variant="secondary">
+              {sort === 'priority' ? 'Sort: Priority' : 'Sort: Newest'}
+            </Button>
+          </Link>
         </form>
       </Card>
 

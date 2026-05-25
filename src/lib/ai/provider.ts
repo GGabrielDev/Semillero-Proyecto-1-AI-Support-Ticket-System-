@@ -8,6 +8,7 @@ import type {
   AnalyzeTicketResponse,
   SuggestReplyResponse,
 } from '@/lib/ai/types';
+import { normalizeTicketContext } from '@/lib/ai/normalize';
 
 const GOOGLE_MODEL = 'gemini-1.5-flash';
 
@@ -97,6 +98,7 @@ export function getAiProviderName(): AiProviderName {
 }
 
 export async function analyzeTicket(title: string, description: string): Promise<AnalyzeTicketResponse> {
+  const ctx = normalizeTicketContext(title, description);
   const system = `You triage support tickets. Respond with valid JSON only and no markdown.
 JSON schema:
 {
@@ -110,8 +112,8 @@ JSON schema:
   "riskLevel": "low|medium|high|critical",
   "nextAction": "assign|escalate|close|request_info|monitor"
 }`;
-  const promptText = `Ticket title: ${title}
-Ticket description: ${description}
+  const promptText = `Ticket title: ${ctx.title}
+Ticket description: ${ctx.description}
 
 Return a concise summary, classification, exactly 3 actionable suggestions, a risk level, and the best next action.`;
   const { text, modelVersion } = await complete(system, promptText);
@@ -134,11 +136,12 @@ export async function suggestReply(
   description: string,
   comments: string[],
 ): Promise<SuggestReplyResponse> {
+  const ctx = normalizeTicketContext(title, description, comments);
   const system =
     'You are a senior support agent. Write a clear, empathetic, professional reply that helps move the ticket toward resolution.';
-  const commentsBlock = comments.length ? `- ${comments.join('\n- ')}` : 'No comments yet.';
-  const promptText = `Ticket title: ${title}
-Ticket description: ${description}
+  const commentsBlock = ctx.comments.length ? `- ${ctx.comments.join('\n- ')}` : 'No comments yet.';
+  const promptText = `Ticket title: ${ctx.title}
+Ticket description: ${ctx.description}
 
 Comments:
 ${commentsBlock}

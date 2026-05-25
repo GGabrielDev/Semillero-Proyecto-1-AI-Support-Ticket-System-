@@ -46,6 +46,7 @@ export interface Database {
           description: string;
           status: 'open' | 'in_progress' | 'resolved' | 'closed';
           priority: 'low' | 'medium' | 'high' | 'critical';
+          priority_order: number;
           category: string | null;
           created_by: string | null;
           assigned_to: string | null;

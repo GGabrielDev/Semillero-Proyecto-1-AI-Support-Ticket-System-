@@ -3,6 +3,7 @@ import { notFound, redirect } from 'next/navigation';
 import { AiSuggestionPanel } from '@/components/tickets/AiSuggestionPanel';
 import { CommentForm } from '@/components/tickets/CommentForm';
 import { TicketActionsPanel } from '@/components/tickets/TicketActionsPanel';
+import { TicketRealtimeSync } from '@/components/tickets/TicketRealtimeSync';
 import { TicketStatusBadge } from '@/components/tickets/TicketStatusBadge';
 import { Badge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
@@ -149,6 +150,8 @@ export default async function TicketDetailPage({ params }: { params: Promise<{ i
           title={ticket.title}
         />
       </div>
+
+      <TicketRealtimeSync ticketId={ticket.id} />
     </div>
   );
 }

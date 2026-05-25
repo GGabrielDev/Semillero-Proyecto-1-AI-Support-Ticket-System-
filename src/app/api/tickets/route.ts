@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 
 import { persistTicketAnalysis } from '@/lib/ai/service';
 import { triggerN8nWorkflow } from '@/lib/n8n';
+import { createNotificationsForAgents } from '@/lib/notifications';
 import { createClient } from '@/lib/supabase/server';
 import { CreateTicketSchema, TicketPrioritySchema, TicketStatusSchema } from '@/lib/validations';
 import { toSearchPattern } from '@/lib/utils';
@@ -103,6 +104,13 @@ export async function POST(request: Request) {
     title: ticket.title,
     priority: ticket.priority,
     createdBy: ticket.created_by ?? user.id,
+  });
+
+  void createNotificationsForAgents({
+    ticketId: ticket.id,
+    type: 'ticket_created',
+    title: `New ticket: ${ticket.title}`,
+    body: `Created by ${user.email ?? 'a user'}. Priority: ${ticket.priority}.`,
   });
 
   void persistTicketAnalysis(ticket.id, ticket.title, ticket.description).catch((caughtError) => {
