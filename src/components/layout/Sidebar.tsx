@@ -10,13 +10,18 @@ import type { UserRole } from '@/types/user';
 export function Sidebar({ role }: { role: UserRole }) {
   const pathname = usePathname();
   const { t } = useI18n();
-  const links = [
-    { href: '/dashboard', label: t('sidebar.overview') },
-    { href: '/tickets', label: t('sidebar.tickets') },
-    { href: '/tickets/new', label: t('sidebar.newTicket') },
-    ...(role === 'agent' || role === 'admin' ? [{ href: '/admin/ai-events', label: t('sidebar.aiEvents') }] : []),
-    ...(role === 'admin' ? [{ href: '/admin/users', label: t('sidebar.admin') }] : []),
-  ];
+  const links = role === 'user'
+    ? [
+        { href: '/tickets', label: t('sidebar.tickets') },
+        { href: '/tickets/new', label: t('sidebar.newTicket') },
+      ]
+    : [
+        { href: '/dashboard', label: t('sidebar.overview') },
+        { href: '/tickets', label: t('sidebar.tickets') },
+        { href: '/tickets/new', label: t('sidebar.newTicket') },
+        { href: '/admin/ai-events', label: t('sidebar.aiEvents') },
+        ...(role === 'admin' ? [{ href: '/admin/users', label: t('sidebar.admin') }] : []),
+      ];
 
   return (
     <aside className="flex w-full flex-col border-b border-slate-800 bg-slate-950 px-6 py-6 lg:min-h-screen lg:w-72 lg:border-b-0 lg:border-r">

@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -27,6 +28,10 @@ export default async function DashboardPage() {
   }
 
   const isAgent = isAgentOrAdmin(profile?.role);
+
+  if (!isAgent) {
+    redirect('/tickets');
+  }
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
@@ -244,4 +249,3 @@ export default async function DashboardPage() {
     </div>
   );
 }
-
