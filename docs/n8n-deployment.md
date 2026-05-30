@@ -124,11 +124,11 @@ Fired when a ticket is first opened. Posts the initial status message and saves 
    - **Table**: Select `slack_tickets`.
    - **Fields**: Click **Add Field** to map columns:
      - `ticketId`: `{{ $('Webhook').item.json.body.payload.ticketId }}` *(Retrieve ticketId from the original trigger payload)*
-     - `channelId`: `{{ $json.channel || $json.message.channel }}` *(Retrieve channel ID from the Slack node output)*
-     - `ts`: `{{ $json.message.ts }}` *(Retrieve timestamp ID from the Slack node output)*
+     - `channelId`: `{{ $json.channel }}` *(Retrieve channel ID from the Slack node output)*
+     - `ts`: `{{ $json.message_timestamp }}` *(Retrieve timestamp ID from the Slack node output)*
 
 > [!NOTE]
-> When Slack successfully posts a message, n8n wraps the message details in a `message` object. Therefore, the timestamp is located at `{{ $json.message.ts }}` rather than `{{ $json.ts }}`. However, when retrieving data *from* the Data Table later in the flow, the returned row is flat, meaning the stored timestamp will be accessed via `{{ $json.ts }}`.
+> When Slack successfully posts a message, n8n provides the timestamp at `{{ $json.message_timestamp }}` at the top level of the output, or inside the nested object at `{{ $json.message.ts }}`. Ensure you map `ts` in your Data Table to `{{ $json.message_timestamp }}` (or `{{ $json.message.ts }}`). However, when retrieving data *from* the Data Table later in the flow, the returned row is flat, meaning the stored timestamp will be accessed via `{{ $json.ts }}` directly.
 
 ---
 
@@ -317,9 +317,9 @@ Ensure your Slack Bot Token has the following Scopes configured in the Slack Dev
 * `chat:write.public` (to post in channels without joining first)
 * `channels:read` (to inspect channel IDs)
 
-### 4. Incorrect Slack Output Mapping (Missing `ts`)
+### 4. Incorrect Slack Output Mapping (Missing `ts` or `message_timestamp`)
 When saving the Slack message reference after the Send Message node, using `{{ $json.ts }}` directly will result in a null/undefined value in the Data Table.
-* **Why**: The Slack API response returned by the standard Slack Send node nests the timestamp inside the `message` object.
+* **Why**: The response returned by n8n's Slack node outputs the message timestamp as `message_timestamp` at the top level, or nested inside the `message` object as `ts`.
 * **Incorrect**: `{{ $json.ts }}`
-* **Correct**: `{{ $json.message.ts }}`
+* **Correct**: `{{ $json.message_timestamp }}` or `{{ $json.message.ts }}`
 * **Note**: When retrieving the row later from the `slack_tickets` Data Table (e.g., in the update branches), the row is flat. In those downstream nodes, reference it using `{{ $json.ts }}` directly.
