@@ -116,6 +116,9 @@ export async function PATCH(request: Request, context: { params: Promise<{ actio
     actionType: action.action_type,
     decision: parsed.data.decision,
     decidedBy: user.id,
+    lifecycleStatus: 'ai_action_decided',
+    correlationId: action.ticket_id,
+    updatesEvent: 'ai_action_required',
   });
 
   return NextResponse.json({

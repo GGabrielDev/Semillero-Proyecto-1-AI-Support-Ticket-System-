@@ -49,6 +49,8 @@ export async function GET(request: Request) {
       priority: ticket.priority,
       summary: ticket.ai_summary,
     })),
+    lifecycleStatus: 'daily_summary_generated',
+    correlationId: `daily_summary_${new Date().toISOString().slice(0, 10)}`,
   });
 
   return NextResponse.json({

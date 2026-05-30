@@ -225,15 +225,129 @@ The selected locale is stored in a `locale` cookie and can be changed from the l
 
 ## n8n Setup
 
-Configure three workflows and point them to the app/webhook URLs you expose:
+### 1) Basic wiring
 
-1. **Ticket created** — Receive the `ticket_created` event from `N8N_WEBHOOK_URL` and send an email confirmation or Slack message.
-2. **High-priority ticket** — Receive the `high_priority_ticket` event and notify on-call/ops teams via Slack or PagerDuty.
-3. **Daily summary** — Trigger `/api/cron/daily-summary` on a schedule with `Authorization: Bearer {CRON_SECRET}` and consume the outbound `daily_summary` payload.
+1. Set `N8N_WEBHOOK_URL` in the app to your n8n webhook endpoint (example: `https://your-n8n/webhook/ticket-events`).
+2. In n8n create one workflow:
+   - **Webhook** node (POST, path `ticket-events`)
+   - **Switch** node after webhook
+3. In Switch, evaluate:
+   - `{{$json.body.event}}`
+4. Create rules for:
+   - `ticket_created`
+   - `ai_action_required`
+   - `high_priority_ticket`
+   - `daily_summary`
+   - `ticket_status_changed` (optional)
+   - `ai_action_decided` (optional)
 
-For inbound callbacks to `/api/webhooks/n8n`, send the shared secret in the `x-webhook-secret` header.
+> n8n webhook payload is wrapped in `body`, so `{{$json.event}}` will fail. Use `{{$json.body.event}}`.
 
-> When `N8N_WEBHOOK_URL` is not set, the app silently skips all outbound webhook calls. A startup warning will remind you.
+### 2) Starter workflow: send one Slack message, then keep updating it
+
+This gives you the flow you asked for:
+- `ticket_created` sends "ticket received, waiting for AI analysis"
+- `ai_action_required` edits that same Slack message with AI output
+- `high_priority_ticket`, `ticket_status_changed`, and `ai_action_decided` keep editing that same message
+
+#### 2a) `ticket_created` branch
+
+1. Slack node: `chat.postMessage`
+2. Message example:
+   - Ticket `{{$json.body.payload.ticketId}}` received.
+   - Status: waiting for AI analysis.
+3. Add Data Store (or DB) node to persist the Slack message reference:
+   - Key: `{{$json.body.payload.ticketId}}`
+   - Value: Slack `channel` + `ts` returned by `chat.postMessage`
+
+#### 2b) `ai_action_required` branch
+
+1. Read Data Store by key:
+   - `{{$json.body.payload.ticketId}}`
+2. Slack node: `chat.update`
+   - Channel: saved channel
+   - Timestamp: saved ts
+3. Updated message example:
+   - Ticket `{{$json.body.payload.ticketId}}`
+   - AI next action: `{{$json.body.payload.nextAction}}`
+   - Risk: `{{$json.body.payload.riskLevel}}`
+   - Summary: `{{$json.body.payload.summary}}`
+
+If no prior message exists, fallback to `chat.postMessage` so the alert is never lost.
+
+#### 2c) Additional update branches
+
+Use the same lookup key (`{{$json.body.payload.ticketId}}`) and `chat.update` for:
+- `high_priority_ticket` (priority/risk escalation update)
+- `ticket_status_changed` (status transition update)
+- `ai_action_decided` (operator decision update)
+
+### 3) Event payload notes
+
+`ticket_created` payload now includes:
+- `ticketId`
+- `title`
+- `priority`
+- `createdBy`
+- `lifecycleStatus=awaiting_ai_analysis`
+- `correlationId=ticketId`
+
+`ai_action_required` payload includes:
+- `ticketId`
+- `nextAction`
+- `summary`
+- `riskLevel`
+- `lifecycleStatus=ai_action_required`
+- `correlationId=ticketId`
+- `updatesEvent=ticket_created`
+
+`high_priority_ticket` payload includes:
+- `ticketId`
+- `priority`
+- `riskLevel`
+- `summary`
+- `lifecycleStatus=high_priority_detected`
+- `correlationId=ticketId`
+- `updatesEvent=ticket_created`
+
+`ticket_status_changed` payload includes:
+- `ticketId`
+- `title`
+- `status`
+- `priority`
+- `updatedBy`
+- `lifecycleStatus=ticket_status_changed`
+- `correlationId=ticketId`
+- `updatesEvent=ticket_created`
+
+`ai_action_decided` payload includes:
+- `actionId`
+- `ticketId`
+- `actionType`
+- `decision`
+- `decidedBy`
+- `lifecycleStatus=ai_action_decided`
+- `correlationId=ticketId`
+- `updatesEvent=ai_action_required`
+
+`daily_summary` payload includes:
+- `totalOpenTickets`
+- `statusCounts`
+- `tickets[]`
+- `lifecycleStatus=daily_summary_generated`
+- `correlationId=daily_summary_YYYY-MM-DD`
+
+### 4) Daily summary cron
+
+Trigger `/api/cron/daily-summary` on a schedule with:
+- `Authorization: Bearer {CRON_SECRET}`
+
+### 5) Optional inbound callback security
+
+For inbound callbacks to `/api/webhooks/n8n`, send:
+- `x-webhook-secret: {N8N_WEBHOOK_SECRET}`
+
+> When `N8N_WEBHOOK_URL` is not set, outbound webhook calls are skipped.
 
 ---
 

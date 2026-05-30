@@ -106,6 +106,9 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
       status: updatedTicket.status,
       priority: updatedTicket.priority,
       updatedBy: user.id,
+      lifecycleStatus: 'ticket_status_changed',
+      correlationId: updatedTicket.id,
+      updatesEvent: 'ticket_created',
     });
   }
 
