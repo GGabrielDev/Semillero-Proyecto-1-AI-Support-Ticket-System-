@@ -1,4 +1,5 @@
 import { analyzeTicket, getAiProviderName, suggestReply } from '@/lib/ai/provider';
+import type { AiProviderName } from '@/lib/ai/types';
 import { triggerN8nWorkflow } from '@/lib/n8n';
 import { createNotificationsForAgents } from '@/lib/notifications';
 import { createAdminClient } from '@/lib/supabase/admin';
@@ -12,6 +13,7 @@ async function logAiEvent(input: {
   errorMessage?: string;
   promptText?: string;
   modelVersion?: string;
+  provider?: AiProviderName;
   resultJson?: Json;
 }) {
   const admin = createAdminClient();
@@ -23,7 +25,7 @@ async function logAiEvent(input: {
   await admin.from('ai_events').insert({
     ticket_id: input.ticketId ?? null,
     event_type: input.eventType,
-    provider: getAiProviderName(),
+    provider: input.provider ?? getAiProviderName(),
     latency_ms: input.latencyMs,
     success: input.success,
     error_message: input.errorMessage ?? null,
@@ -58,6 +60,7 @@ export async function persistTicketAnalysis(ticketId: string, title: string, des
       success: true,
       promptText: analysis.promptText,
       modelVersion: analysis.modelVersion,
+      provider: analysis.provider,
       resultJson: analysis.result as unknown as Json,
     });
 
@@ -141,6 +144,7 @@ export async function persistTicketReplySuggestion(
       success: true,
       promptText: suggestion.promptText,
       modelVersion: suggestion.modelVersion,
+      provider: suggestion.provider,
       resultJson: {
         suggestion: suggestion.result,
       },

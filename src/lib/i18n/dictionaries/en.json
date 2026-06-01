@@ -44,6 +44,7 @@
     "tickets": "Tickets",
     "newTicket": "New Ticket",
     "aiEvents": "AI Events",
+    "aiConfig": "AI Configuration",
     "admin": "Admin"
   },
   "notifications": {

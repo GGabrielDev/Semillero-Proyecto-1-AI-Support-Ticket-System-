@@ -20,7 +20,12 @@ export function Sidebar({ role }: { role: UserRole }) {
         { href: '/tickets', label: t('sidebar.tickets') },
         { href: '/tickets/new', label: t('sidebar.newTicket') },
         { href: '/admin/ai-events', label: t('sidebar.aiEvents') },
-        ...(role === 'admin' ? [{ href: '/admin/users', label: t('sidebar.admin') }] : []),
+        ...(role === 'admin'
+          ? [
+              { href: '/admin/ai-config', label: t('sidebar.aiConfig') || 'AI Config' },
+              { href: '/admin/users', label: t('sidebar.admin') },
+            ]
+          : []),
       ];
 
   return (
