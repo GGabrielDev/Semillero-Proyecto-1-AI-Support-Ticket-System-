@@ -63,6 +63,7 @@ supabase/migrations/002_rls_policies.sql
 supabase/migrations/003_ai_enhancements.sql
 supabase/migrations/004_categories_notifications.sql
 supabase/migrations/005_priority_order.sql
+supabase/migrations/006_ai_configs.sql
 ```
 
 ### 5. Start the development server
@@ -77,71 +78,49 @@ The startup script runs first. If any required environment variables are missing
 
 ## AI Provider Setup
 
-The app supports two AI backends, selectable via the `AI_PROVIDER` environment variable. It will **automatically fall back to Google AI** if the llama-server is unreachable.
+The application features a secure, database-driven AI configuration panel with automatic fallback capabilities, supporting **Google Gemini**, **DeepSeek**, and local **Llama** endpoints.
 
-### Option A — Google Generative AI (recommended for quick start)
+### Option A — Database-Driven Setup (Recommended)
 
-1. Get a free API key at <https://aistudio.google.com/app/apikey>.
-2. Set in `.env.local`:
+Manage all AI models dynamically from the **Admin panel** (`/admin/ai-config`):
+
+1. **API Key Security**: API keys are symmetrically encrypted at rest using AES-256-GCM. Set the `AI_ENCRYPTION_KEY` variable in Next.js (standard 32-byte hex) to encrypt/decrypt database secrets securely.
+2. **Access Admin Panel**: Sign in as an administrator, click **AI Configuration** in the sidebar.
+3. **Configure Providers**:
+   - Apply presets for **Google Gemini**, **DeepSeek**, or **Llama (Local)**.
+   - Fill in your API keys, model versions (e.g., `gemini-1.5-flash` or `deepseek-chat`), and optional custom endpoints.
+4. **Active vs Fallback**:
+   - Mark one configuration as **Active Primary**.
+   - Assign **Fallback Priority Numbers** (e.g., 1, 2, 3) to other configurations.
+   - If the active primary provider returns an error, the app sequentially cascades down the fallback queue automatically.
+
+---
+
+### Option B — Local Llama-Server
+
+To run inference on your own hardware using [llama.cpp](https://github.com/ggerganov/llama.cpp):
+
+1. **Install and Run Server**:
+   ```bash
+   git clone https://github.com/ggerganov/llama.cpp && cd llama.cpp
+   cmake -B build && cmake --build build -j
+   ./build/bin/llama-server -m /path/to/model.gguf --port 8080
    ```
-   AI_PROVIDER=google
-   GOOGLE_GENERATIVE_AI_API_KEY=your_key_here
+2. **Ngrok Tunneling (for Render)**:
+   ```bash
+   npx ngrok http 8080
    ```
+   Copy the HTTPS forwarding URL (e.g., `https://xxxx.ngrok-free.app`) to your database AI config or environment variables as `LLAMA_SERVER_BASE_URL`.
 
-### Option B — Local llama-server
+---
 
-Use this to run inference on your own hardware. The Render-hosted instance can still reach your local model by using a tunnel (see below).
+### Option C — Legacy Environment Variables (Fallback)
 
-#### 2a. Install and run llama-server
+If no configs exist in the database, the system falls back to environment parameters in `.env.local`:
 
-Using [llama.cpp](https://github.com/ggerganov/llama.cpp):
-
-```bash
-# Build llama.cpp (or download a pre-built binary)
-git clone https://github.com/ggerganov/llama.cpp && cd llama.cpp
-cmake -B build && cmake --build build -j
-
-# Download a GGUF model (e.g. Llama-3 8B)
-# Then start the server on port 8080:
-./build/bin/llama-server -m /path/to/model.gguf --port 8080
-```
-
-The server exposes an **OpenAI-compatible** `/v1/chat/completions` endpoint.
-
-Set in `.env.local` for local development:
-
-```
-AI_PROVIDER=llama
-LLAMA_SERVER_BASE_URL=http://localhost:8080
-LLAMA_MODEL=llama3
-```
-
-#### 2b. Expose your local server to Render with ngrok
-
-For the Render-hosted frontend/backend to reach your local llama-server, you need a public tunnel:
-
-```bash
-npx ngrok http 8080
-```
-
-ngrok prints a forwarding URL such as `https://xxxx-xx-xx.ngrok-free.app`. Copy that URL and set it in your **Render environment variables** (Dashboard → Service → Environment):
-
-```
-AI_PROVIDER=llama
-LLAMA_SERVER_BASE_URL=https://xxxx-xx-xx.ngrok-free.app
-```
-
-> **Important:** ngrok free-tier URLs change every time you restart the tunnel. Update `LLAMA_SERVER_BASE_URL` in Render whenever the URL changes, or upgrade to a paid ngrok plan for a stable domain.
-
-#### 2c. Fallback to Google AI
-
-Set `GOOGLE_GENERATIVE_AI_API_KEY` in addition to the llama settings. If the llama-server is unreachable (e.g., your machine is offline), the app will **automatically fall back** to Google Generative AI and log a warning in the server console:
-
-```
-[AI] llama-server at https://... failed (…). Falling back to Google Generative AI (gemini-1.5-flash).
-```
-
-If neither provider is configured, the server logs an actionable error and the AI endpoint returns a 500 with setup instructions.
+* **Google**: Set `AI_PROVIDER=google` and `GOOGLE_GENERATIVE_AI_API_KEY`.
+* **DeepSeek**: Set `AI_PROVIDER=deepseek` and `DEEPSEEK_API_KEY` (optionally `DEEPSEEK_BASE_URL`).
+* **Llama**: Set `AI_PROVIDER=llama`, `LLAMA_SERVER_BASE_URL`, and optionally `LLAMA_MODEL`.
 
 ---
 
@@ -161,9 +140,10 @@ Go to your service's **Environment** tab and fill in all variables marked `sync:
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon key |
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase service-role key |
 | `NEXT_PUBLIC_APP_URL` | Your Render service URL (e.g. `https://your-app.onrender.com`) |
-| `AI_PROVIDER` | `google` or `llama` |
-| `GOOGLE_GENERATIVE_AI_API_KEY` | Google AI key (required for google provider or as fallback) |
-| `LLAMA_SERVER_BASE_URL` | ngrok URL of your local llama-server (only when `AI_PROVIDER=llama`) |
+| `AI_ENCRYPTION_KEY` | 32-byte hex key for database API Key symmetric encryption (generate with `openssl rand -hex 32`) |
+| `AI_PROVIDER` | `google`, `deepseek`, or `llama` (Legacy fallback if database config is empty) |
+| `GOOGLE_GENERATIVE_AI_API_KEY` | Google AI key (Legacy fallback) |
+| `LLAMA_SERVER_BASE_URL` | ngrok URL of your local llama-server (Legacy fallback) |
 
 > If `GOOGLE_GENERATIVE_AI_API_KEY` is missing, Render's build log and startup log will print a clear warning. AI features will be disabled until it is set.
 
@@ -181,10 +161,13 @@ Trigger a deploy. The `npm start` script runs the env check before Next.js start
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | ✅ Yes | Supabase anonymous key |
 | `SUPABASE_SERVICE_ROLE_KEY` | ✅ Yes | Service-role key for admin routes, AI logging, cron, and migrations |
 | `NEXT_PUBLIC_APP_URL` | ✅ Yes | Public app URL for redirects and links |
-| `AI_PROVIDER` | ✅ Yes | `google` or `llama` (defaults to `google`) |
-| `GOOGLE_GENERATIVE_AI_API_KEY` | ⚠ Recommended | Google Generative AI key — required for the `google` provider and used as automatic fallback when `llama` is unreachable |
-| `LLAMA_SERVER_BASE_URL` | When `AI_PROVIDER=llama` | Base URL for the llama-server OpenAI-compatible endpoint |
-| `LLAMA_MODEL` | No | Llama model name sent to the server (default: `llama3`) |
+| `AI_ENCRYPTION_KEY` | ⚠ Recommended | 32-byte hex key used to encrypt/decrypt API keys in the database. Auto-generated dev fallback if not set. |
+| `AI_PROVIDER` | No | `google`, `deepseek` or `llama` (Legacy fallback, defaults to `google`) |
+| `GOOGLE_GENERATIVE_AI_API_KEY` | No | Google Generative AI key (Legacy fallback) |
+| `LLAMA_SERVER_BASE_URL` | No | Base URL for the llama-server (Legacy fallback) |
+| `LLAMA_MODEL` | No | Llama model name (Legacy fallback, default: `llama3`) |
+| `DEEPSEEK_API_KEY` | No | DeepSeek API key (Legacy fallback) |
+| `DEEPSEEK_BASE_URL` | No | Base URL for DeepSeek API (Legacy fallback, default: `https://api.deepseek.com/v1`) |
 | `N8N_WEBHOOK_URL` | Optional | Outbound n8n webhook URL for automation triggers |
 | `N8N_WEBHOOK_SECRET` | Optional | Shared secret for inbound `/api/webhooks/n8n` requests |
 | `CRON_SECRET` | Optional | Bearer token used by `/api/cron/daily-summary` |
@@ -204,6 +187,8 @@ Trigger a deploy. The `npm start` script runs the env check before Next.js start
 | `/api/ai/suggest` | `POST` | Generate an AI reply suggestion |
 | `/api/admin/users` | `GET` | Admin-only list of users and roles |
 | `/api/admin/users/[id]` | `PATCH` | Admin-only role update endpoint |
+| `/api/admin/ai-config` | `GET`, `POST` | Admin-only retrieve or save AI configurations |
+| `/api/admin/ai-config/[id]` | `DELETE` | Admin-only delete AI configuration |
 | `/api/admin/ai-events` | `GET` | Agent/admin paginated AI event audit feed |
 | `/api/webhooks/n8n` | `POST` | Inbound n8n acknowledgement webhook secured by `N8N_WEBHOOK_SECRET` |
 | `/api/cron/daily-summary` | `GET` | Bearer-protected daily summary trigger that sends current open ticket stats to n8n |
@@ -361,11 +346,12 @@ For inbound callbacks to `/api/webhooks/n8n`, send:
 
 ## Deploy Checklist
 
-- [ ] Run all Supabase migrations in order: `001`, `002`, `003`, `004`, `005`.
+- [ ] Run all Supabase migrations in order: `001` through `006`.
 - [ ] Set all required Render environment variables from the table above.
 - [ ] Set `NEXT_PUBLIC_APP_URL` to your Render service URL.
-- [ ] Set `GOOGLE_GENERATIVE_AI_API_KEY` — required for Google AI and as llama fallback.
-- [ ] If using llama: start `ngrok http 8080` locally and set `LLAMA_SERVER_BASE_URL` in Render.
+- [ ] Set `AI_ENCRYPTION_KEY` — required for database API Key symmetric encryption (generate with `openssl rand -hex 32`).
+- [ ] Configure active and fallback AI models in the Admin Configuration panel (`/admin/ai-config`).
+- [ ] (Legacy) If not using the Admin config panel, set your fallback credentials in env (`GOOGLE_GENERATIVE_AI_API_KEY`, etc.).
 - [ ] Configure `N8N_WEBHOOK_URL` to the public n8n webhook endpoint (optional).
 - [ ] Configure n8n scheduled jobs or platform cron to call `/api/cron/daily-summary` with `CRON_SECRET` (optional).
 - [ ] If you expose inbound n8n callbacks, configure `N8N_WEBHOOK_SECRET` on both sides (optional).
