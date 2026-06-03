@@ -205,18 +205,16 @@ export function N8nTestManager() {
               <Button
                 type="button"
                 variant="secondary"
-                size="sm"
                 onClick={handleUseTestUrl}
-                className="text-xs bg-slate-800 text-slate-300 hover:bg-slate-700"
+                className="px-2.5 py-1.5 text-xs bg-slate-800 text-slate-300 hover:bg-slate-700"
               >
                 Switch to Test (/webhook-test/)
               </Button>
               <Button
                 type="button"
                 variant="secondary"
-                size="sm"
                 onClick={handleUseProdUrl}
-                className="text-xs bg-slate-800 text-slate-300 hover:bg-slate-700"
+                className="px-2.5 py-1.5 text-xs bg-slate-800 text-slate-300 hover:bg-slate-700"
               >
                 Switch to Production (/webhook/)
               </Button>
