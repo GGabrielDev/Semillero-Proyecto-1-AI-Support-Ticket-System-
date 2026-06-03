@@ -150,6 +150,16 @@ const OPTIONAL_WARNED = [
     hint: 'Set the same value in n8n → Credentials → Header Auth.',
   },
   {
+    key: 'N8N_TEST_MODE',
+    description: 'Force n8n triggers to use webhook-test endpoint (true/false)',
+    hint: 'If true (or in development), replaces "/webhook/" with "/webhook-test/" in N8N_WEBHOOK_URL. Defaults to true in development.',
+  },
+  {
+    key: 'N8N_WEBHOOK_TEST_URL',
+    description: 'Explicit outbound n8n test webhook URL',
+    hint: 'Overrides the auto-replacement of N8N_WEBHOOK_URL when in test mode.',
+  },
+  {
     key: 'CRON_SECRET',
     description: 'Bearer token for /api/cron/daily-summary',
     hint: 'Any random string. Set it in Render/Vercel Cron config or your external scheduler.',
