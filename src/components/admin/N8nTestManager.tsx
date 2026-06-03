@@ -61,11 +61,36 @@ const MOCK_PAYLOADS: MockPayloads = {
     decidedBy: "admin.chief@example.com"
   },
   daily_summary: {
-    date: new Date().toISOString().split('T')[0],
-    totalTickets: 24,
-    openTickets: 6,
-    highPriorityTickets: 3,
-    avgResolutionTimeMin: 54.5
+    totalOpenTickets: 3,
+    statusCounts: {
+      open: 2,
+      in_progress: 1
+    },
+    tickets: [
+      {
+        id: 101,
+        title: "API Gateway returns 504 gateway timeout",
+        status: "open",
+        priority: "critical",
+        summary: "Checkout page is down due to payment gateway failing with 504 status codes."
+      },
+      {
+        id: 102,
+        title: "Cannot reset password via email",
+        status: "in_progress",
+        priority: "medium",
+        summary: "SMTP authentication errors preventing password reset emails from sending."
+      },
+      {
+        id: 103,
+        title: "Wrong price listing for item #92",
+        status: "open",
+        priority: "low",
+        summary: "Pricing database has incorrect values for item 92."
+      }
+    ],
+    lifecycleStatus: "daily_summary_generated",
+    correlationId: `daily_summary_${new Date().toISOString().slice(0, 10)}`
   }
 };
 
