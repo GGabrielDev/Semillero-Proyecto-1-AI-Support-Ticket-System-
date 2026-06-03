@@ -94,6 +94,12 @@ const REQUIRED = [
     hint: 'Local development: http://localhost:3000\n  Production: https://your-app.onrender.com (or Vercel URL)',
     default: 'http://localhost:3000',
   },
+  {
+    key: 'AI_ENCRYPTION_KEY',
+    description: 'Symmetric encryption key for database API keys (32-byte hex)',
+    hint: 'Generate one using: openssl rand -hex 32\n  Required in production to encrypt secure credentials at rest.',
+    optional: process.env.NODE_ENV !== 'production',
+  },
 ];
 
 const AI_GROUP = [
@@ -105,6 +111,7 @@ const AI_GROUP = [
       '  Google Generative AI (Gemini). The app will automatically fall back to\n' +
       '  "google" if the llama server is unreachable.',
     default: 'google',
+    optional: true,
   },
   {
     key: 'LLAMA_SERVER_BASE_URL',
@@ -175,7 +182,7 @@ async function main() {
   console.log('');
 
   // ── Check required vars ────────────────────────────────────────────────────
-  const missingRequired = REQUIRED.filter((v) => !process.env[v.key]);
+  const missingRequired = REQUIRED.filter((v) => !v.optional && !process.env[v.key]);
 
   if (missingRequired.length > 0) {
     if (isTTY) {
