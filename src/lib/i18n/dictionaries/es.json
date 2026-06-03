@@ -45,6 +45,7 @@
     "newTicket": "Nuevo ticket",
     "aiEvents": "Eventos IA",
     "aiConfig": "Configuración IA",
+    "n8nTest": "Integración n8n",
     "admin": "Administración"
   },
   "notifications": {

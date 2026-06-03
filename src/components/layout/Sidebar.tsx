@@ -23,6 +23,7 @@ export function Sidebar({ role }: { role: UserRole }) {
         ...(role === 'admin'
           ? [
               { href: '/admin/ai-config', label: t('sidebar.aiConfig') || 'AI Config' },
+              { href: '/admin/n8n-test', label: t('sidebar.n8nTest') || 'n8n Integration' },
               { href: '/admin/users', label: t('sidebar.admin') },
             ]
           : []),
