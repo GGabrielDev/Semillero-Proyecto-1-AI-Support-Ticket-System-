@@ -1,6 +1,6 @@
 import type { TicketPriority } from '@/types/ticket';
 
-export type AiProviderName = 'llama' | 'google';
+export type AiProviderName = 'llama' | 'google' | 'deepseek';
 
 export interface AiAnalysisResult {
   summary: string;

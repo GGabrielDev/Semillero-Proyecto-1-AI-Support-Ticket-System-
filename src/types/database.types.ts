@@ -126,7 +126,7 @@ export interface Database {
           id: string;
           ticket_id: string | null;
           event_type: 'analyze' | 'suggest_reply' | 'prioritize';
-          provider: 'llama' | 'google';
+          provider: 'llama' | 'google' | 'deepseek';
           latency_ms: number | null;
           success: boolean;
           error_message: string | null;
@@ -139,7 +139,7 @@ export interface Database {
           id?: string;
           ticket_id?: string | null;
           event_type: 'analyze' | 'suggest_reply' | 'prioritize';
-          provider: 'llama' | 'google';
+          provider: 'llama' | 'google' | 'deepseek';
           latency_ms?: number | null;
           success?: boolean;
           error_message?: string | null;
@@ -152,7 +152,7 @@ export interface Database {
           id?: string;
           ticket_id?: string | null;
           event_type?: 'analyze' | 'suggest_reply' | 'prioritize';
-          provider?: 'llama' | 'google';
+          provider?: 'llama' | 'google' | 'deepseek';
           latency_ms?: number | null;
           success?: boolean;
           error_message?: string | null;
@@ -253,6 +253,42 @@ export interface Database {
           read?: boolean;
           delivered?: boolean;
           created_at?: string;
+        };
+        Relationships: [];
+      };
+      ai_configs: {
+        Row: {
+          id: string;
+          provider: 'google' | 'llama' | 'deepseek';
+          model_name: string;
+          api_key: string | null;
+          base_url: string | null;
+          is_active: boolean;
+          fallback_order: number | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          provider: 'google' | 'llama' | 'deepseek';
+          model_name: string;
+          api_key?: string | null;
+          base_url?: string | null;
+          is_active?: boolean;
+          fallback_order?: number | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          provider?: 'google' | 'llama' | 'deepseek';
+          model_name?: string;
+          api_key?: string | null;
+          base_url?: string | null;
+          is_active?: boolean;
+          fallback_order?: number | null;
+          created_at?: string;
+          updated_at?: string;
         };
         Relationships: [];
       };

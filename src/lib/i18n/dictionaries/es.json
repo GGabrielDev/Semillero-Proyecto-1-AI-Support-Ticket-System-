@@ -44,6 +44,7 @@
     "tickets": "Tickets",
     "newTicket": "Nuevo ticket",
     "aiEvents": "Eventos IA",
+    "aiConfig": "Configuración IA",
     "admin": "Administración"
   },
   "notifications": {
