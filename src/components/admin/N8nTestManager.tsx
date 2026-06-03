@@ -262,7 +262,7 @@ export function N8nTestManager() {
           >
             {loading ? (
               <>
-                <Spinner size="sm" />
+                <Spinner />
                 Triggering...
               </>
             ) : (
@@ -290,7 +290,7 @@ export function N8nTestManager() {
 
         {loading && (
           <div className="flex-1 flex flex-col items-center justify-center text-slate-400">
-            <Spinner size="lg" className="mb-4" />
+            <Spinner className="h-8 w-8 border-4 mb-4" />
             <p className="font-medium animate-pulse">Contacting n8n endpoint...</p>
           </div>
         )}
@@ -302,9 +302,9 @@ export function N8nTestManager() {
                 <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">Result</span>
                 <div className="flex items-center gap-2 mt-1">
                   {success ? (
-                    <Badge variant="success" className="bg-emerald-500/15 text-emerald-400 border-emerald-500/25">Success</Badge>
+                    <Badge className="bg-emerald-500/15 text-emerald-400 border-emerald-500/25">Success</Badge>
                   ) : (
-                    <Badge variant="danger" className="bg-rose-500/15 text-rose-400 border-rose-500/25">Failed</Badge>
+                    <Badge className="bg-rose-500/15 text-rose-400 border-rose-500/25">Failed</Badge>
                   )}
                 </div>
               </div>
