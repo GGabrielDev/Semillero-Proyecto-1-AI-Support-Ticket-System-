@@ -1,212 +1,325 @@
-# n8n Deployment Setup (Project Integration Only)
+# n8n Integration & Deployment Guide
 
-This document covers only the n8n integration steps for this app.
+This document provides a step-by-step walkthrough for configuring and deploying the n8n automation workflow integrated with this AI Support Ticket System. 
 
-## 1) App environment variables
+Instead of just explaining *what* needs to be configured, this guide explains exactly *how* to build the workflow using modern **n8n v1+** features, including **n8n Data Tables** for state management and native **Slack** node operations.
 
-Set these in the app host (Render or equivalent):
+---
 
-```env
-N8N_WEBHOOK_URL=https://your-n8n-domain/webhook/ticket-events
-N8N_WEBHOOK_SECRET=your_shared_secret
-CRON_SECRET=your_cron_secret
+## 1. Integration Architecture
+
+The application communicates with n8n asynchronously. When tickets are created, analyzed by AI, escalated, or updated, Next.js fires outbound webhook payloads. n8n processes these payloads, routes them based on event types, tracks the associated Slack message references using a built-in Data Table, and updates the target Slack thread in real-time.
+
+```mermaid
+graph TD
+    App[Next.js App] -->|1. Webhook POST| WebhookNode[n8n Webhook Trigger]
+    WebhookNode -->|2. Route Event| SwitchNode[n8n Switch Node]
+    
+    %% Ticket Created Flow
+    SwitchNode -->|ticket_created| SlackPost[Slack Node: Post Msg]
+    SlackPost -->|3. Get Message Ref| DBInsert[Data Table: Insert Row]
+    
+    %% Ticket Updated Flows
+    SwitchNode -->|high_priority_ticket<br>ai_action_required<br>ai_action_decided<br>ticket_status_changed| DBGet[Data Table: Get Row]
+    DBGet -->|4. Find Slack ts/channel| IfRefExists{Ref Exists?}
+    IfRefExists -->|Yes| SlackUpdate[Slack Node: Update Msg]
+    IfRefExists -->|No| SlackPostFallback[Slack Node: Post Msg]
+    SlackPostFallback --> DBInsert
+    
+    %% Daily Summary Flow
+    SwitchNode -->|daily_summary| SummaryCode[Code Node: Format Text]
+    SummaryCode --> SlackSummary[Slack Node: Send Msg]
 ```
 
-- `N8N_WEBHOOK_URL`: where the app sends outbound events.
-- `N8N_WEBHOOK_SECRET`: only for inbound callbacks to `/api/webhooks/n8n`.
-- `CRON_SECRET`: used by `/api/cron/daily-summary`.
+---
 
-## 2) Create the n8n webhook workflow
+## 2. Application Environment Variables
 
-1. Create a new workflow.
-2. Add **Webhook** node:
-   - Method: `POST`
-   - Path: `ticket-events`
-3. Activate workflow.
-4. Confirm your `N8N_WEBHOOK_URL` points to this exact webhook URL.
+Set these environment variables on your web application host (e.g., Render, Vercel, Railway):
 
-## 3) Configure the Switch node correctly
+| Variable Name | Required | Description / Value |
+|---|---|---|
+| `N8N_WEBHOOK_URL` | Yes (to enable) | The public production URL of your n8n Webhook node. Example: `https://n8n.yourdomain.com/webhook/ticket-events` |
+| `N8N_WEBHOOK_SECRET` | Optional | Shared authentication secret for securing inbound calls from n8n back into Next.js. |
+| `CRON_SECRET` | Yes (for daily cron) | Secure bearer token to authorize trigger requests to `/api/cron/daily-summary`. |
 
-n8n wraps request payload under `body`, so use:
+---
 
-```text
-{{$json.body.event}}
-```
+## 3. Step 1: Create the n8n Data Table
 
-Add rules:
-- `ticket_created`
-- `ai_action_required`
-- `high_priority_ticket`
-- `daily_summary`
-- `ticket_status_changed` (optional)
-- `ai_action_decided` (optional)
+To keep Slack workspace clutter to a minimum, this integration posts **one message per ticket** and updates that exact message throughout the ticket's lifecycle. To do this, n8n needs to store the relation between the database `ticketId` and the Slack message reference (`channel` + `ts`).
 
-## 4) Event lifecycle behavior (recommended)
+We use **n8n Data Tables** (a native feature in n8n v1+) to persist this state reliably:
 
-Use one Slack message per ticket and keep editing it through the lifecycle.
+1. Log into your n8n dashboard.
+2. In the left-hand navigation menu, click on **Data tables**.
+3. Click the **Create table** button in the top right.
+4. Name the table: `slack_tickets`.
+5. Add the following columns by clicking **+ Add column**:
+   - **`ticketId`** (Type: `String`): The unique identifier of the ticket in Next.js (serves as the lookup key).
+   - **`channelId`** (Type: `String`): The Slack channel ID where the message was posted.
+   - **`ts`** (Type: `String`): The timestamp ID returned by Slack's API, representing the message identifier.
 
-| Event | Slack behavior |
-|---|---|
-| `ticket_created` | Create initial message |
-| `high_priority_ticket` | Update existing ticket message with priority/risk warning |
-| `ai_action_required` | Update existing ticket message with AI next action |
-| `ai_action_decided` | Update existing ticket message with operator decision |
-| `ticket_status_changed` | Update existing ticket message with latest status |
-| `daily_summary` | Create/update a separate daily digest message |
+---
 
-For ticket lifecycle events, always key by `ticketId`.
+## 4. Step 2: Configure the n8n Workflow
 
-## 5) Starter Slack lifecycle pattern (recommended)
+Create a new workflow canvas in n8n and build the nodes as described below:
 
-Goal:
-- `ticket_created`: post a message saying ticket was received and waiting for AI.
-- `ai_action_required`: edit that same Slack message with AI output.
+### 4.1. Webhook Node (Trigger)
+This node receives incoming event notifications from the Next.js app.
 
-### A) `ticket_created` branch
+1. Add a **Webhook** node and name it `Webhook`.
+2. Configure the following parameters:
+   - **HTTP Method**: `POST`
+   - **Path**: `ticket-events`
+   - **Authentication**: `None` *(Note: Secret validation can be set up in a Header Auth configuration if desired)*
+   - **Response Mode**: `Immediately`
+     - **Response Code**: `200`
+     - **Response Body**: Custom Text -> `{"status": "received"}`
+3. Save the workflow. Copy the **Production URL** (under the "Production" tab in the webhook node settings) and set it as `N8N_WEBHOOK_URL` in your Next.js environment.
 
-1. Slack `chat.postMessage`:
-   - Example text:
-     - Ticket `{{$json.body.payload.ticketId}}` received.
-     - Status: waiting for AI analysis.
-2. Persist Slack response in Data Store:
-   - Key: `{{$json.body.payload.ticketId}}`
-   - Value: Slack `channel` and `ts`
+### 4.2. Switch Node (Event Router)
+Routes payloads based on the event name.
 
-### B) `ai_action_required` branch
+1. Connect the output of your `Webhook` node to a new **Switch** node. Name it `Route Event`.
+2. Configure the settings:
+   - **Value 1**: `{{ $json.body.event }}` *(Note the spaces inside the curly braces; this is standard n8n v1 syntax)*
+   - **Type**: `String`
+   - **Routing Rules**: Click "Add Routing Rule" to configure 6 outputs based on the `event` value:
+     1. String: **Equals** `ticket_created` $\rightarrow$ Output `0`
+     2. String: **Equals** `high_priority_ticket` $\rightarrow$ Output `1`
+     3. String: **Equals** `ai_action_required` $\rightarrow$ Output `2`
+     4. String: **Equals** `ai_action_decided` $\rightarrow$ Output `3`
+     5. String: **Equals** `ticket_status_changed` $\rightarrow$ Output `4`
+     6. String: **Equals** `daily_summary` $\rightarrow$ Output `5`
 
-1. Data Store read by key:
-   - `{{$json.body.payload.ticketId}}`
-2. Slack `chat.update`:
-   - Channel: saved channel
-   - Timestamp: saved ts
-   - Include:
-     - `{{$json.body.payload.nextAction}}`
-     - `{{$json.body.payload.riskLevel}}`
-     - `{{$json.body.payload.summary}}`
-3. If key not found, fallback to `chat.postMessage`.
+---
 
-## 6) Event payload fields from this app
+## 5. Step 3: Implement the Event Branches
 
-### `ticket_created`
+Below are the node configurations for each output of the `Route Event` Switch node.
 
-Includes:
-- `ticketId`
-- `title`
-- `priority`
-- `createdBy`
-- `lifecycleStatus=awaiting_ai_analysis`
-- `correlationId=ticketId`
-- `source=ticket_creation`
+### Branch 0: `ticket_created` (Output 0)
+Fired when a ticket is first opened. Posts the initial status message and saves its reference.
 
-### `ai_action_required`
+1. **Slack Node** (Name: `Slack - Send Initial Message`):
+   - Connect it to Output 0 of `Route Event`.
+   - **Resource**: `Message`
+   - **Operation**: `Send`
+   - **Channel**: Select your target support channel or enter a channel ID (e.g., `#support-tickets`).
+   - **Text**: Use the expression:
+     ```markdown
+     🆕 *New Ticket Received*
+     *ID:* `{{ $json.body.payload.ticketId }}`
+     *Title:* {{ $json.body.payload.title }}
+     *Priority:* `{{ $json.body.payload.priority.toUpperCase() }}`
+     *Created By:* {{ $json.body.payload.createdBy }}
+     *Status:* Awaiting AI analysis...
+     ```
+2. **Data Table Node** (Name: `Data Table - Save Ref`):
+   - Connect it to the output of `Slack - Send Initial Message`.
+   - **Resource**: `Row`
+   - **Operation**: `Insert`
+   - **Table**: Select `slack_tickets`.
+   - **Fields**: Click **Add Field** to map columns:
+     - `ticketId`: `{{ $('Webhook').item.json.body.payload.ticketId }}` *(Retrieve ticketId from the original trigger payload)*
+     - `channelId`: `{{ $json.channel }}` *(Retrieve channel ID from the Slack node output)*
+     - `ts`: `{{ $json.message_timestamp }}` *(Retrieve timestamp ID from the Slack node output)*
 
-Includes:
-- `ticketId`
-- `nextAction`
-- `summary`
-- `riskLevel`
-- `lifecycleStatus=ai_action_required`
-- `correlationId=ticketId`
-- `updatesEvent=ticket_created`
+> [!NOTE]
+> When Slack successfully posts a message, n8n provides the timestamp at `{{ $json.message_timestamp }}` at the top level of the output, or inside the nested object at `{{ $json.message.ts }}`. Ensure you map `ts` in your Data Table to `{{ $json.message_timestamp }}` (or `{{ $json.message.ts }}`). However, when retrieving data *from* the Data Table later in the flow, the returned row is flat, meaning the stored timestamp will be accessed via `{{ $json.ts }}` directly.
 
-### `high_priority_ticket`
+---
 
-Includes:
-- `ticketId`
-- `priority`
-- `riskLevel`
-- `summary`
-- `lifecycleStatus=high_priority_detected`
-- `correlationId=ticketId`
-- `updatesEvent=ticket_created`
+### Reusable Lifecycle Update Sub-flow
+For Branches 1, 2, 3, and 4, we want to check if a Slack message already exists for the ticket and update it.
 
-### `ticket_status_changed`
+#### 1. Data Table Node (Get Row)
+Retrieve the reference if it exists.
+- **Resource**: `Row`
+- **Operation**: `Get`
+- **Table**: Select `slack_tickets`.
+- **Filters**: Click **Add Filter**:
+  - Column: `ticketId`
+  - Operator: **Equal**
+  - Value: `{{ $json.body.payload.ticketId }}`
 
-Includes:
-- `ticketId`
-- `title`
-- `status`
-- `priority`
-- `updatedBy`
-- `lifecycleStatus=ticket_status_changed`
-- `correlationId=ticketId`
-- `updatesEvent=ticket_created`
+#### 2. If Node (Check Reference Presence)
+Check if a reference was found.
+- Connect the output of the Data Table Get node to a new **If** node. Name it `If Ref Exists`.
+- **Condition**: Add a String condition:
+  - **Value 1**: `{{ $json.ts }}`
+  - **Operation**: **Is Not Empty**
 
-### `ai_action_decided`
+#### 3. True Output $\rightarrow$ Slack Update Node
+If the reference exists, update the original message.
+- Connect the **True** output of `If Ref Exists` to a new **Slack** node. Name it `Slack - Update Message`.
+- **Resource**: `Message`
+- **Operation**: `Update`
+- **Channel**: `{{ $json.channelId }}` *(Mapped from the Get Row node)*
+- **Message Timestamp**: `{{ $json.ts }}` *(Mapped from the Get Row node)*
+- **Text**: Custom text formatted specifically for each branch (see below).
 
-Includes:
-- `actionId`
-- `ticketId`
-- `actionType`
-- `decision`
-- `decidedBy`
-- `lifecycleStatus=ai_action_decided`
-- `correlationId=ticketId`
-- `updatesEvent=ai_action_required`
+#### 4. False Output $\rightarrow$ Fallback Send
+If no reference exists (e.g., ticket created before n8n integration), fallback to sending a new message and saving it.
+- Connect the **False** output of `If Ref Exists` to a new Slack Send node.
+- After sending, connect it to a Data Table Insert node to record the new `channelId` and `ts`.
 
-### `daily_summary`
+---
 
-Includes:
-- `totalOpenTickets`
-- `statusCounts`
-- `tickets[]`
-- `lifecycleStatus=daily_summary_generated`
-- `correlationId=daily_summary_YYYY-MM-DD`
+### Branch-Specific Formatting for Updates
 
-## 7) n8n branch configuration details
+#### Branch 1: `high_priority_ticket` (Output 1)
+- **Slack Update Text**:
+  ```markdown
+  🆕 *New Ticket Received*
+  *ID:* `{{ $('Webhook').item.json.body.payload.ticketId }}`
+  *Title:* {{ $('Webhook').item.json.body.payload.title }}
+  *Priority:* `{{ $('Webhook').item.json.body.payload.priority.toUpperCase() }}`
+  *Created By:* {{ $('Webhook').item.json.body.payload.createdBy }}
+  
+  🚨 *HIGH PRIORITY WARNING*
+  *Risk Level:* `{{ $('Webhook').item.json.body.payload.riskLevel }}`
+  *AI Summary:* {{ $('Webhook').item.json.body.payload.summary }}
+  ```
 
-### A) `ticket_created`
-1. Post Slack message.
-2. Save Slack `channel` + `ts` in Data Store under key `{{$json.body.payload.ticketId}}`.
+#### Branch 2: `ai_action_required` (Output 2)
+- **Slack Update Text**:
+  ```markdown
+  🆕 *New Ticket Received*
+  *ID:* `{{ $('Webhook').item.json.body.payload.ticketId }}`
+  *Title:* {{ $('Webhook').item.json.body.payload.title }}
+  *Priority:* `{{ $('Webhook').item.json.body.payload.priority.toUpperCase() }}`
+  *Created By:* {{ $('Webhook').item.json.body.payload.createdBy }}
+  
+  🧠 *AI Analysis Result*
+  *Suggested Next Action:* `{{ $('Webhook').item.json.body.payload.nextAction }}`
+  *Risk Level:* `{{ $('Webhook').item.json.body.payload.riskLevel }}`
+  *Summary:* {{ $('Webhook').item.json.body.payload.summary }}
+  *Status:* Awaiting Operator Approval
+  ```
 
-### B) `high_priority_ticket`
-1. Read Data Store by key `{{$json.body.payload.ticketId}}`.
-2. Slack `chat.update` the same message with priority and risk details.
-3. If key missing, post new message and store `channel` + `ts`.
+#### Branch 3: `ai_action_decided` (Output 3)
+- **Slack Update Text**:
+  ```markdown
+  🆕 *New Ticket Received*
+  *ID:* `{{ $('Webhook').item.json.body.payload.ticketId }}`
+  *Title:* {{ $('Webhook').item.json.body.payload.title }}
+  *Priority:* `{{ $('Webhook').item.json.body.payload.priority.toUpperCase() }}`
+  *Created By:* {{ $('Webhook').item.json.body.payload.createdBy }}
+  
+  🧠 *AI Analysis & Action*
+  *Suggested Next Action:* `{{ $('Webhook').item.json.body.payload.nextAction || 'Processed' }}`
+  *Status:* Approved & Processed
+  *Action Type:* `{{ $('Webhook').item.json.body.payload.actionType }}`
+  *Decision:* `{{ $('Webhook').item.json.body.payload.decision }}`
+  *Operator:* {{ $('Webhook').item.json.body.payload.decidedBy }}
+  ```
 
-### C) `ai_action_required`
-1. Read Data Store by key `{{$json.body.payload.ticketId}}`.
-2. Slack `chat.update` with next action/summary/risk.
-3. Fallback to `chat.postMessage` if key missing.
+#### Branch 4: `ticket_status_changed` (Output 4)
+- **Slack Update Text**:
+  ```markdown
+  🆕 *New Ticket Received*
+  *ID:* `{{ $('Webhook').item.json.body.payload.ticketId }}`
+  *Title:* {{ $('Webhook').item.json.body.payload.title }}
+  *Created By:* {{ $('Webhook').item.json.body.payload.createdBy }}
+  
+  🔄 *Ticket Status Update*
+  *New Status:* `{{ $('Webhook').item.json.body.payload.status.toUpperCase() }}`
+  *Updated By:* {{ $('Webhook').item.json.body.payload.updatedBy }}
+  ```
 
-### D) `ai_action_decided`
-1. Read Data Store by key `{{$json.body.payload.ticketId}}`.
-2. Slack `chat.update` with decision and action type.
-3. Fallback to `chat.postMessage` if key missing.
+---
 
-### E) `ticket_status_changed`
-1. Read Data Store by key `{{$json.body.payload.ticketId}}`.
-2. Slack `chat.update` with new status.
-3. Fallback to `chat.postMessage` if key missing.
+### Branch 5: `daily_summary` (Output 5)
+Formats and posts the daily summary digest containing all currently open ticket metrics.
 
-### F) `daily_summary`
-1. Use key `{{$json.body.payload.correlationId}}`.
-2. Post/update a digest message separate from ticket lifecycle messages.
+1. **Code Node** (Name: `Format Daily Summary`):
+   - Connect this to Output 5 of `Route Event`.
+   - **Language**: `JavaScript`
+   - **Mode**: `Run Once for All Items`
+   - Paste the following code into the script editor:
+     ```javascript
+     const payload = $input.item.json.body.payload;
+     
+     // Format individual open tickets
+     const ticketsList = payload.tickets.map(t => {
+       return `- *[${t.priority.toUpperCase()}]* #${t.id}: _${t.title}_ (Status: \`${t.status}\`)`;
+     }).join('\n');
+     
+     // Format status breakdown
+     const breakdown = Object.entries(payload.statusCounts)
+       .map(([status, count]) => `  - *${status}*: ${count}`)
+       .join('\n');
+     
+     const text = `📊 *Daily Ticket Summary Digest*\n\n` +
+                  `*Total Open Tickets:* ${payload.totalOpenTickets}\n` +
+                  `*Status Breakdown:*\n${breakdown}\n\n` +
+                  `*Open Tickets List:*\n${ticketsList || '_No open tickets found._'}`;
+                  
+     return { json: { text } };
+     ```
+2. **Slack Node** (Name: `Slack - Send Summary`):
+   - Connect it to the output of `Format Daily Summary`.
+   - **Resource**: `Message`
+   - **Operation**: `Send`
+   - **Channel**: Select your digest channel (e.g., `#support-metrics`).
+   - **Text**: `{{ $json.text }}`
 
-## 8) Daily summary trigger
+---
 
-To trigger daily summary processing, call:
+## 6. Daily Summary Trigger (Cron Setup)
 
-```text
-POST /api/cron/daily-summary
-Authorization: Bearer {CRON_SECRET}
-```
+To trigger the daily summary event, you need to configure a cron scheduler to invoke the Next.js daily summary endpoint. You can use an **n8n Cron Node** inside n8n or an external platform cron.
 
-This emits the `daily_summary` event to n8n.
+### n8n Trigger Method
+1. Create a separate, simple n8n workflow.
+2. Add a **Schedule Trigger** node set to run daily at your preferred hour.
+3. Connect it to an **HTTP Request** node configured as follows:
+   - **Method**: `POST`
+   - **URL**: `https://your-nextjs-app.com/api/cron/daily-summary`
+   - **Headers**:
+     - `Authorization`: `Bearer your_cron_secret` *(Must match the `CRON_SECRET` environment variable in Next.js)*
 
-## 9) Inbound callback security (optional)
+---
 
-If n8n calls back into this app:
+## 7. Inbound Callbacks to Next.js (Security)
 
-```text
-POST /api/webhooks/n8n
-x-webhook-secret: {N8N_WEBHOOK_SECRET}
-```
+If you configure n8n to write actions back to Next.js using the `/api/webhooks/n8n` route:
 
-## 10) Common pitfalls
+1. Add an **HTTP Request** node in n8n.
+2. Configure:
+   - **Method**: `POST`
+   - **URL**: `https://your-nextjs-app.com/api/webhooks/n8n`
+   - **Headers**:
+     - `x-webhook-secret`: `your_shared_secret` *(Must match the `N8N_WEBHOOK_SECRET` environment variable in Next.js)*
+     - `Content-Type`: `application/json`
+   - **Body Parameters**: Mapped database update parameters (e.g., ticket ID and resolutions).
 
-1. Using `{{$json.event}}` instead of `{{$json.body.event}}`.
-2. Workflow not activated.
-3. Wrong webhook path in `N8N_WEBHOOK_URL`.
-4. Slack update failing because `channel`/`ts` were not persisted.
-5. Not using `correlationId` / `ticketId` keys consistently across branches.
+---
+
+## 8. Common Troubleshooting & Pitfalls
+
+### 1. Payload Reference Errors
+n8n v1+ wraps incoming HTTP request payloads in the `.body` parameter. 
+* **Incorrect**: `{{ $json.event }}` or `{{ $json.payload.ticketId }}`
+* **Correct**: `{{ $json.body.event }}` or `{{ $json.body.payload.ticketId }}`
+
+### 2. Context Loss in Downstream Nodes
+When updating messages or saving references, mapping `{{ $json.body.payload.ticketId }}` directly will fail because downstream nodes (such as the Data Table Get Row node) overwrite `$json` with their own results.
+* **Solution**: Retrieve variables from specific upstream nodes. Instead of `$json`, reference the source node name explicitly:
+  `{{ $('Webhook').item.json.body.payload.ticketId }}`
+
+### 3. Missing Slack App Scopes
+Ensure your Slack Bot Token has the following Scopes configured in the Slack Developer Console:
+* `chat:write` (to post messages)
+* `chat:write.public` (to post in channels without joining first)
+* `channels:read` (to inspect channel IDs)
+
+### 4. Incorrect Slack Output Mapping (Missing `ts` or `message_timestamp`)
+When saving the Slack message reference after the Send Message node, using `{{ $json.ts }}` directly will result in a null/undefined value in the Data Table.
+* **Why**: The response returned by n8n's Slack node outputs the message timestamp as `message_timestamp` at the top level, or nested inside the `message` object as `ts`.
+* **Incorrect**: `{{ $json.ts }}`
+* **Correct**: `{{ $json.message_timestamp }}` or `{{ $json.message.ts }}`
+* **Note**: When retrieving the row later from the `slack_tickets` Data Table (e.g., in the update branches), the row is flat. In those downstream nodes, reference it using `{{ $json.ts }}` directly.
