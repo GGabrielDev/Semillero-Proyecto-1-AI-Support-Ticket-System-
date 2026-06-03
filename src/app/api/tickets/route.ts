@@ -104,6 +104,7 @@ export async function POST(request: Request) {
     title: ticket.title,
     priority: ticket.priority,
     createdBy: ticket.created_by ?? user.id,
+    creatorEmail: user.email,
     lifecycleStatus: 'awaiting_ai_analysis',
     correlationId: ticket.id,
     source: 'ticket_creation',

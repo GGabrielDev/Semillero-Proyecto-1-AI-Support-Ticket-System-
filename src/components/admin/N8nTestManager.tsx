@@ -18,21 +18,24 @@ const MOCK_PAYLOADS: MockPayloads = {
     description: "Getting a 403 Forbidden error when trying to log in using my Google workspace account. Need this fixed ASAP.",
     priority: "medium",
     status: "open",
-    createdBy: "john.doe@example.com"
+    createdBy: "mock-uuid-user-999",
+    creatorEmail: "john.doe@example.com"
   },
   ticket_status_changed: {
     ticketId: "mock-uuid-ticket-101",
     title: "Cannot login to client portal",
     status: "resolved",
     priority: "medium",
-    createdBy: "john.doe@example.com",
+    createdBy: "mock-uuid-user-999",
+    creatorEmail: "john.doe@example.com",
     updatedBy: "agent.smith@example.com"
   },
   high_priority_ticket: {
     ticketId: "mock-uuid-ticket-202",
     title: "Payment gateway offline — API returning 504 gateway timeout",
     priority: "critical",
-    createdBy: "billing@majorclient.com",
+    createdBy: "mock-uuid-user-888",
+    creatorEmail: "billing@majorclient.com",
     riskLevel: "critical",
     summary: "The main payment processor gateway is unresponsive. All checkouts are failing with 504 errors.",
     lifecycleStatus: "high_priority_detected",
@@ -43,7 +46,8 @@ const MOCK_PAYLOADS: MockPayloads = {
     ticketId: "mock-uuid-ticket-202",
     title: "Payment gateway offline — API returning 504 gateway timeout",
     priority: "critical",
-    createdBy: "billing@majorclient.com",
+    createdBy: "mock-uuid-user-888",
+    creatorEmail: "billing@majorclient.com",
     nextAction: "escalate",
     riskLevel: "critical",
     summary: "Payment processor checkout failure requires immediate engineering escalation.",
@@ -55,7 +59,8 @@ const MOCK_PAYLOADS: MockPayloads = {
     ticketId: "mock-uuid-ticket-202",
     title: "Payment gateway offline — API returning 504 gateway timeout",
     priority: "critical",
-    createdBy: "billing@majorclient.com",
+    createdBy: "mock-uuid-user-888",
+    creatorEmail: "billing@majorclient.com",
     actionType: "escalate",
     decision: "approved",
     decidedBy: "admin.chief@example.com"

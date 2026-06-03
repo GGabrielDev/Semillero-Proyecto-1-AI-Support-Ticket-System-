@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { getAuthContext, isAgentOrAdmin } from '@/lib/auth';
 import { triggerN8nWorkflow } from '@/lib/n8n';
 import { createNotification } from '@/lib/notifications';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { UpdateTicketSchema } from '@/lib/validations';
 import type { Ticket } from '@/types/ticket';
 
@@ -100,12 +101,24 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
 
   // Trigger n8n when ticket status changes
   if (parsed.data.status) {
+    const admin = createAdminClient();
+    let creatorEmail: string | null = null;
+    if (admin && updatedTicket.created_by) {
+      const { data: creatorProfile } = await admin
+        .from('profiles')
+        .select('email')
+        .eq('id', updatedTicket.created_by)
+        .maybeSingle();
+      creatorEmail = creatorProfile?.email ?? null;
+    }
+
     void triggerN8nWorkflow('ticket_status_changed', {
       ticketId: updatedTicket.id,
       title: updatedTicket.title,
       status: updatedTicket.status,
       priority: updatedTicket.priority,
       updatedBy: user.id,
+      creatorEmail,
       lifecycleStatus: 'ticket_status_changed',
       correlationId: updatedTicket.id,
       updatesEvent: 'ticket_created',
