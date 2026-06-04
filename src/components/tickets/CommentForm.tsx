@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -18,6 +18,21 @@ export function CommentForm({ ticketId, canCreateInternal }: CommentFormProps) {
   const [isInternal, setIsInternal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const handleInsertSuggestion = (event: CustomEvent<string>) => {
+      setContent(event.detail);
+      const element = document.getElementById('comment-content');
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        element.focus();
+      }
+    };
+    window.addEventListener('insert-ai-suggestion', handleInsertSuggestion as EventListener);
+    return () => {
+      window.removeEventListener('insert-ai-suggestion', handleInsertSuggestion as EventListener);
+    };
+  }, []);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();

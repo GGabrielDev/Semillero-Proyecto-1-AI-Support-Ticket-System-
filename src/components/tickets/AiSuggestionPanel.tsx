@@ -166,6 +166,11 @@ export function AiSuggestionPanel({
     }
   };
 
+  const copyToCommentBox = () => {
+    const event = new CustomEvent('insert-ai-suggestion', { detail: reply });
+    window.dispatchEvent(event);
+  };
+
   return (
     <Card className="space-y-5">
       <div className="flex items-start justify-between gap-4">
@@ -220,7 +225,19 @@ export function AiSuggestionPanel({
       ) : null}
 
       <div className="space-y-2 rounded-xl border border-slate-800 bg-slate-950/70 p-4">
-        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Suggested reply</p>
+        <div className="flex items-center justify-between">
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Suggested reply</p>
+          {reply && reply !== 'No suggested reply yet.' && (
+            <Button
+              className="px-2.5 py-1.5 text-xs font-medium"
+              onClick={copyToCommentBox}
+              type="button"
+              variant="secondary"
+            >
+              Use suggestion
+            </Button>
+          )}
+        </div>
         <p className="whitespace-pre-wrap text-sm text-slate-200">{reply}</p>
       </div>
 

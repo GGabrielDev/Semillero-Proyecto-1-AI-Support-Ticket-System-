@@ -1,4 +1,5 @@
 import { notFound, redirect } from 'next/navigation';
+import ReactMarkdown from 'react-markdown';
 
 import { AiSuggestionPanel } from '@/components/tickets/AiSuggestionPanel';
 import { CommentForm } from '@/components/tickets/CommentForm';
@@ -112,7 +113,32 @@ export default async function TicketDetailPage({ params }: { params: Promise<{ i
                     </div>
                     <p className="text-xs text-slate-500">{formatDate(comment.created_at)}</p>
                   </div>
-                  <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-slate-300">{comment.content}</p>
+                  <div className="mt-3 text-sm leading-6 text-slate-300">
+                    <ReactMarkdown
+                      components={{
+                        p: ({ node: _node, ...props }) => <p className="mb-2 last:mb-0" {...props} />,
+                        ul: ({ node: _node, ...props }) => <ul className="list-disc pl-5 mb-2" {...props} />,
+                        ol: ({ node: _node, ...props }) => <ol className="list-decimal pl-5 mb-2" {...props} />,
+                        li: ({ node: _node, ...props }) => <li className="mb-1" {...props} />,
+                        a: ({ node: _node, ...props }) => <a className="text-sky-400 hover:underline" target="_blank" rel="noopener noreferrer" {...props} />,
+                        code: ({ node: _node, className, children, ...props }: { node?: unknown; className?: string; children?: React.ReactNode }) => {
+                          const match = /language-(\w+)/.exec(className || '');
+                          const inline = !match;
+                          return inline ? (
+                            <code className="rounded bg-slate-800 px-1.5 py-0.5 text-xs text-amber-200" {...props}>
+                              {children}
+                            </code>
+                          ) : (
+                            <code className="block rounded bg-slate-900 p-3 text-xs text-amber-200 overflow-x-auto my-2" {...props}>
+                              {children}
+                            </code>
+                          );
+                        }
+                      }}
+                    >
+                      {comment.content}
+                    </ReactMarkdown>
+                  </div>
                 </div>
               ))}
             </div>
