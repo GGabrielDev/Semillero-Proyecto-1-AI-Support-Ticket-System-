@@ -4,12 +4,12 @@ export function cn(...inputs: ClassValue[]) {
   return inputs.filter(Boolean).join(' ');
 }
 
-export function formatDate(value?: string | null) {
+export function formatDate(value?: string | null, locale = 'en') {
   if (!value) {
     return '—';
   }
 
-  return new Intl.DateTimeFormat('en', {
+  return new Intl.DateTimeFormat(locale, {
     dateStyle: 'medium',
     timeStyle: 'short',
   }).format(new Date(value));

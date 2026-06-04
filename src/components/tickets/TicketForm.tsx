@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
 import { CreateTicketSchema } from '@/lib/validations';
+import { useI18n } from '@/lib/i18n/I18nProvider';
 
 type FormValues = z.infer<typeof CreateTicketSchema>;
 
@@ -17,6 +18,7 @@ type Category = { id: string; name: string };
 
 export function TicketForm() {
   const router = useRouter();
+  const { t } = useI18n();
   const [error, setError] = useState<string | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
 
@@ -60,7 +62,7 @@ export function TicketForm() {
     const payload = (await response.json().catch(() => null)) as { error?: string; ticket?: { id: string } } | null;
 
     if (!response.ok || !payload?.ticket?.id) {
-      setError(payload?.error ?? 'Unable to create ticket.');
+      setError(payload?.error ?? t('tickets.unableToCreate'));
       return;
     }
 
@@ -72,15 +74,15 @@ export function TicketForm() {
     <form className="space-y-6" onSubmit={onSubmit}>
       <div className="space-y-2">
         <label className="text-sm font-medium text-slate-200" htmlFor="title">
-          Title
+          {t('tickets.fieldTitle')}
         </label>
-        <Input id="title" placeholder="Describe the issue" {...register('title')} />
+        <Input id="title" placeholder={t('tickets.titlePlaceholder')} {...register('title')} />
         {errors.title ? <p className="text-sm text-rose-300">{errors.title.message}</p> : null}
       </div>
 
       <div className="space-y-2">
         <label className="text-sm font-medium text-slate-200" htmlFor="category">
-          Category
+          {t('tickets.fieldCategory')}
         </label>
         {categories.length > 0 ? (
           <select
@@ -88,32 +90,36 @@ export function TicketForm() {
             id="category"
             {...register('category')}
           >
-            <option value="">Select a category</option>
-            {categories.map((cat) => (
-              <option key={cat.id} value={cat.name}>
-                {cat.name.charAt(0).toUpperCase() + cat.name.slice(1)}
-              </option>
-            ))}
+            <option value="">{t('tickets.selectCategory')}</option>
+            {categories.map((cat) => {
+              const key = `common.category.${cat.name.toLowerCase()}`;
+              const translation = t(key);
+              const label = translation === key ? (cat.name.charAt(0).toUpperCase() + cat.name.slice(1)) : translation;
+              return (
+                <option key={cat.id} value={cat.name}>
+                  {label}
+                </option>
+              );
+            })}
           </select>
         ) : (
-          <Input id="category" placeholder="billing, authentication, technical, general…" {...register('category')} />
+          <Input id="category" placeholder={t('tickets.categoryPlaceholder')} {...register('category')} />
         )}
       </div>
 
       <div className="space-y-2">
         <label className="text-sm font-medium text-slate-200" htmlFor="description">
-          Description
+          {t('tickets.fieldDescription')}
         </label>
-        <Textarea id="description" placeholder="Add enough detail for the support team to help quickly." {...register('description')} />
+        <Textarea id="description" placeholder={t('tickets.descriptionPlaceholder')} {...register('description')} />
         {errors.description ? <p className="text-sm text-rose-300">{errors.description.message}</p> : null}
       </div>
 
       {error ? <p className="text-sm text-rose-300">{error}</p> : null}
 
       <Button className="w-full sm:w-auto" isLoading={isSubmitting} type="submit">
-        Create ticket
+        {t('tickets.createButton')}
       </Button>
     </form>
   );
 }
-

@@ -1,5 +1,7 @@
+'use client';
+
 import { Badge } from '@/components/ui/Badge';
-import { getStatusLabel } from '@/lib/utils';
+import { useI18n } from '@/lib/i18n/I18nProvider';
 import type { TicketStatus } from '@/types/ticket';
 
 const statusClasses: Record<TicketStatus, string> = {
@@ -10,5 +12,6 @@ const statusClasses: Record<TicketStatus, string> = {
 };
 
 export function TicketStatusBadge({ status }: { status: TicketStatus }) {
-  return <Badge className={statusClasses[status]}>{getStatusLabel(status)}</Badge>;
+  const { t } = useI18n();
+  return <Badge className={statusClasses[status]}>{t(`common.status.${status}`)}</Badge>;
 }

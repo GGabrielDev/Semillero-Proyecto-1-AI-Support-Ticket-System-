@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Textarea } from '@/components/ui/Textarea';
+import { useI18n } from '@/lib/i18n/I18nProvider';
 
 type CommentFormProps = {
   ticketId: string;
@@ -14,6 +15,7 @@ type CommentFormProps = {
 
 export function CommentForm({ ticketId, canCreateInternal }: CommentFormProps) {
   const router = useRouter();
+  const { t } = useI18n();
   const [content, setContent] = useState('');
   const [isInternal, setIsInternal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -53,14 +55,14 @@ export function CommentForm({ ticketId, canCreateInternal }: CommentFormProps) {
       const payload = (await response.json().catch(() => null)) as { error?: string } | null;
 
       if (!response.ok) {
-        throw new Error(payload?.error ?? 'Unable to add comment.');
+        throw new Error(payload?.error ?? t('tickets.unableToAddComment'));
       }
 
       setContent('');
       setIsInternal(false);
       router.refresh();
     } catch (caughtError) {
-      setError(caughtError instanceof Error ? caughtError.message : 'Unable to add comment.');
+      setError(caughtError instanceof Error ? caughtError.message : t('tickets.unableToAddComment'));
     } finally {
       setIsSubmitting(false);
     }
@@ -70,18 +72,18 @@ export function CommentForm({ ticketId, canCreateInternal }: CommentFormProps) {
     <Card>
       <form className="space-y-4" onSubmit={handleSubmit}>
         <div>
-          <h3 className="text-lg font-semibold text-white">Add comment</h3>
-          <p className="mt-1 text-sm text-slate-400">Share an update, workaround, or follow-up question.</p>
+          <h3 className="text-lg font-semibold text-white">{t('tickets.addComment')}</h3>
+          <p className="mt-1 text-sm text-slate-400">{t('tickets.addCommentSubtitle')}</p>
         </div>
 
         <div className="space-y-2">
           <label className="text-sm font-medium text-slate-200" htmlFor="comment-content">
-            Comment
+            {t('tickets.commentField')}
           </label>
           <Textarea
             id="comment-content"
             onChange={(event) => setContent(event.target.value)}
-            placeholder="Add your comment here..."
+            placeholder={t('tickets.commentPlaceholder')}
             value={content}
           />
         </div>
@@ -94,14 +96,14 @@ export function CommentForm({ ticketId, canCreateInternal }: CommentFormProps) {
               onChange={(event) => setIsInternal(event.target.checked)}
               type="checkbox"
             />
-            Mark as internal note
+            {t('tickets.markInternal')}
           </label>
         ) : null}
 
         {error ? <p className="text-sm text-rose-300">{error}</p> : null}
 
         <Button isLoading={isSubmitting} type="submit">
-          Post comment
+          {t('tickets.postComment')}
         </Button>
       </form>
     </Card>

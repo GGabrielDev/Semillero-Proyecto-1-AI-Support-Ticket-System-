@@ -10,7 +10,8 @@ import { Badge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
 import { getAuthContext, isAgentOrAdmin } from '@/lib/auth';
 import type { AiAnalysisResult } from '@/lib/ai/types';
-import { formatDate, getPriorityLabel } from '@/lib/utils';
+import { formatDate } from '@/lib/utils';
+import { getRequestTranslator } from '@/lib/i18n/server';
 import type { AiPendingAction, Ticket, TicketComment } from '@/types/ticket';
 
 const priorityClasses = {
@@ -58,6 +59,15 @@ export default async function TicketDetailPage({ params }: { params: Promise<{ i
       ).data ?? []) as AiPendingAction[])
     : [];
 
+  const { t, locale } = await getRequestTranslator();
+
+  const getCategoryLabel = (category?: string | null) => {
+    if (!category) return t('common.category.general');
+    const key = `common.category.${category.toLowerCase()}`;
+    const translation = t(key);
+    return translation === key ? category : translation;
+  };
+
   return (
     <div className="grid gap-6 xl:grid-cols-[1.4fr_0.8fr]">
       <div className="space-y-6">
@@ -65,41 +75,55 @@ export default async function TicketDetailPage({ params }: { params: Promise<{ i
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <h1 className="text-3xl font-semibold text-white">{ticket.title}</h1>
-              <p className="mt-2 text-sm text-slate-400">Created {formatDate(ticket.created_at)}</p>
+              <p className="mt-2 text-sm text-slate-400">
+                {t('tickets.createdDate', { date: formatDate(ticket.created_at, locale) })}
+              </p>
             </div>
             <div className="flex flex-wrap gap-2">
               <TicketStatusBadge status={ticket.status} />
-              <Badge className={priorityClasses[ticket.priority]}>{getPriorityLabel(ticket.priority)}</Badge>
+              <Badge className={priorityClasses[ticket.priority]}>{t(`common.priority.${ticket.priority}`)}</Badge>
             </div>
           </div>
 
           <div className="grid gap-4 md:grid-cols-3">
             <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-4">
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Category</p>
-              <p className="mt-2 text-sm text-slate-200">{ticket.category || 'General'}</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                {t('tickets.categoryLabel')}
+              </p>
+              <p className="mt-2 text-sm text-slate-200">{getCategoryLabel(ticket.category)}</p>
             </div>
             <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-4">
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Last updated</p>
-              <p className="mt-2 text-sm text-slate-200">{formatDate(ticket.updated_at)}</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                {t('tickets.lastUpdated')}
+              </p>
+              <p className="mt-2 text-sm text-slate-200">{formatDate(ticket.updated_at, locale)}</p>
             </div>
             <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-4">
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Assignment</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                {t('tickets.assignment')}
+              </p>
               <p className="mt-2 text-sm text-slate-200">
-                {ticket.assigned_to === user.id ? 'Assigned to you' : ticket.assigned_to ? 'Assigned' : 'Unassigned'}
+                {ticket.assigned_to === user.id
+                  ? t('tickets.assignedToYou')
+                  : ticket.assigned_to
+                    ? t('tickets.assigned')
+                    : t('tickets.unassigned')}
               </p>
             </div>
           </div>
 
           <div className="space-y-3 rounded-xl border border-slate-800 bg-slate-950/60 p-5">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Description</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              {t('tickets.description')}
+            </p>
             <p className="whitespace-pre-wrap text-sm leading-7 text-slate-200">{ticket.description}</p>
           </div>
         </Card>
 
         <Card className="space-y-5">
           <div>
-            <h2 className="text-xl font-semibold text-white">Comments timeline</h2>
-            <p className="mt-1 text-sm text-slate-400">Track internal notes and requester updates.</p>
+            <h2 className="text-xl font-semibold text-white">{t('tickets.commentsTimeline')}</h2>
+            <p className="mt-1 text-sm text-slate-400">{t('tickets.commentsTimelineSubtitle')}</p>
           </div>
 
           {comments.length ? (
@@ -108,10 +132,16 @@ export default async function TicketDetailPage({ params }: { params: Promise<{ i
                 <div key={comment.id} className="rounded-xl border border-slate-800 bg-slate-950/60 p-4">
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-2">
-                      <p className="text-sm font-medium text-slate-200">{comment.is_internal ? 'Internal note' : 'Comment'}</p>
-                      {comment.is_internal ? <Badge className="border-amber-500/30 bg-amber-500/10 text-amber-200">Internal</Badge> : null}
+                      <p className="text-sm font-medium text-slate-200">
+                        {comment.is_internal ? t('tickets.internalNote') : t('tickets.comment')}
+                      </p>
+                      {comment.is_internal ? (
+                        <Badge className="border-amber-500/30 bg-amber-500/10 text-amber-200">
+                          {t('tickets.internalLabel')}
+                        </Badge>
+                      ) : null}
                     </div>
-                    <p className="text-xs text-slate-500">{formatDate(comment.created_at)}</p>
+                    <p className="text-xs text-slate-500">{formatDate(comment.created_at, locale)}</p>
                   </div>
                   <div className="mt-3 text-sm leading-6 text-slate-300">
                     <ReactMarkdown
@@ -144,7 +174,7 @@ export default async function TicketDetailPage({ params }: { params: Promise<{ i
             </div>
           ) : (
             <div className="rounded-xl border border-dashed border-slate-700 bg-slate-950/40 p-6 text-sm text-slate-400">
-              No comments yet.
+              {t('tickets.noComments')}
             </div>
           )}
         </Card>

@@ -1,9 +1,12 @@
+'use client';
+
 import Link from 'next/link';
 
 import { Badge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
 import { TicketStatusBadge } from '@/components/tickets/TicketStatusBadge';
-import { excerpt, formatDate, getPriorityLabel } from '@/lib/utils';
+import { excerpt, formatDate } from '@/lib/utils';
+import { useI18n } from '@/lib/i18n/I18nProvider';
 import type { Ticket } from '@/types/ticket';
 
 const priorityClasses = {
@@ -14,6 +17,15 @@ const priorityClasses = {
 };
 
 export function TicketCard({ ticket }: { ticket: Ticket }) {
+  const { t, locale } = useI18n();
+
+  const getCategoryLabel = (category?: string | null) => {
+    if (!category) return t('common.category.general');
+    const key = `common.category.${category.toLowerCase()}`;
+    const translation = t(key);
+    return translation === key ? category : translation;
+  };
+
   return (
     <Link href={`/tickets/${ticket.id}`}>
       <Card className="space-y-4 transition hover:border-sky-500/50 hover:bg-slate-900">
@@ -24,12 +36,12 @@ export function TicketCard({ ticket }: { ticket: Ticket }) {
           </div>
           <div className="flex flex-wrap gap-2">
             <TicketStatusBadge status={ticket.status} />
-            <Badge className={priorityClasses[ticket.priority]}>{getPriorityLabel(ticket.priority)}</Badge>
+            <Badge className={priorityClasses[ticket.priority]}>{t(`common.priority.${ticket.priority}`)}</Badge>
           </div>
         </div>
         <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500">
-          <span>{ticket.category || 'General'}</span>
-          <span>Updated {formatDate(ticket.updated_at)}</span>
+          <span>{getCategoryLabel(ticket.category)}</span>
+          <span>{t('tickets.updatedDate', { date: formatDate(ticket.updated_at, locale) })}</span>
         </div>
       </Card>
     </Link>
