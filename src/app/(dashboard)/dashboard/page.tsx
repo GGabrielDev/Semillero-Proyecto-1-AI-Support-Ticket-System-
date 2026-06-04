@@ -7,7 +7,8 @@ import { TicketList } from '@/components/tickets/TicketList';
 import { TicketStatusBadge } from '@/components/tickets/TicketStatusBadge';
 import { Badge } from '@/components/ui/Badge';
 import { getAuthContext, isAgentOrAdmin } from '@/lib/auth';
-import { formatDate, getPriorityLabel } from '@/lib/utils';
+import { formatDate } from '@/lib/utils';
+import { getRequestTranslator } from '@/lib/i18n/server';
 import type { Ticket, TicketPriority, TicketStatus } from '@/types/ticket';
 
 const statuses: TicketStatus[] = ['open', 'in_progress', 'resolved', 'closed'];
@@ -32,6 +33,16 @@ export default async function DashboardPage() {
   if (!isAgent) {
     redirect('/tickets');
   }
+
+  const { t, locale } = await getRequestTranslator();
+
+  const getCategoryLabel = (category?: string | null) => {
+    if (!category) return t('common.category.general');
+    const key = `common.category.${category.toLowerCase()}`;
+    const translation = t(key);
+    return translation === key ? category : translation;
+  };
+
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
@@ -100,57 +111,57 @@ export default async function DashboardPage() {
     <div className="space-y-8">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-semibold text-white">Dashboard</h1>
-          <p className="mt-2 text-sm text-slate-400">Monitor workload, triage active issues, and review recent tickets.</p>
+          <h1 className="text-3xl font-semibold text-white">{t('dashboard.title')}</h1>
+          <p className="mt-2 text-sm text-slate-400">{t('dashboard.subtitle')}</p>
         </div>
         <Link href="/tickets/new">
-          <Button>Create ticket</Button>
+          <Button>{t('dashboard.createTicket')}</Button>
         </Link>
       </div>
 
       <div className="grid gap-4 md:grid-cols-5">
         <Card>
-          <p className="text-sm text-slate-400">Open</p>
+          <p className="text-sm text-slate-400">{t('dashboard.open')}</p>
           <p className="mt-3 text-4xl font-semibold text-white">{statusCounts.open}</p>
         </Card>
         <Card>
-          <p className="text-sm text-slate-400">In progress</p>
+          <p className="text-sm text-slate-400">{t('dashboard.inProgress')}</p>
           <p className="mt-3 text-4xl font-semibold text-white">{statusCounts.in_progress}</p>
         </Card>
         <Card>
-          <p className="text-sm text-slate-400">Resolved</p>
+          <p className="text-sm text-slate-400">{t('dashboard.resolved')}</p>
           <p className="mt-3 text-4xl font-semibold text-white">{statusCounts.resolved}</p>
         </Card>
         <Card>
-          <p className="text-sm text-slate-400">Closed</p>
+          <p className="text-sm text-slate-400">{t('dashboard.closed')}</p>
           <p className="mt-3 text-4xl font-semibold text-white">{statusCounts.closed}</p>
         </Card>
         <Card>
-          <p className="text-sm text-slate-400">Resolved (7d)</p>
+          <p className="text-sm text-slate-400">{t('dashboard.resolvedSevenDays')}</p>
           <p className="mt-3 text-4xl font-semibold text-white">{velocity}</p>
         </Card>
       </div>
 
       <Card className="space-y-4">
         <div>
-          <h2 className="text-xl font-semibold text-white">By Priority</h2>
-          <p className="mt-1 text-sm text-slate-400">Current ticket distribution across all priority levels.</p>
+          <h2 className="text-xl font-semibold text-white">{t('dashboard.byPriority')}</h2>
+          <p className="mt-1 text-sm text-slate-400">{t('dashboard.byPrioritySubtitle')}</p>
         </div>
         <div className="grid gap-4 md:grid-cols-4">
           <div>
-            <p className="text-sm text-slate-400">Low</p>
+            <p className="text-sm text-slate-400">{t('common.priority.low')}</p>
             <p className="mt-2 text-2xl font-semibold text-white">{priorityCounts.low}</p>
           </div>
           <div>
-            <p className="text-sm text-slate-400">Medium</p>
+            <p className="text-sm text-slate-400">{t('common.priority.medium')}</p>
             <p className="mt-2 text-2xl font-semibold text-white">{priorityCounts.medium}</p>
           </div>
           <div>
-            <p className="text-sm text-slate-400">High</p>
+            <p className="text-sm text-slate-400">{t('common.priority.high')}</p>
             <p className="mt-2 text-2xl font-semibold text-white">{priorityCounts.high}</p>
           </div>
           <div>
-            <p className="text-sm text-slate-400">Critical</p>
+            <p className="text-sm text-slate-400">{t('common.priority.critical')}</p>
             <p className="mt-2 text-2xl font-semibold text-white">{priorityCounts.critical}</p>
           </div>
         </div>
@@ -160,11 +171,11 @@ export default async function DashboardPage() {
         <Card className="space-y-4">
           <div className="flex items-center justify-between gap-4">
             <div>
-              <h2 className="text-xl font-semibold text-white">Agent queue</h2>
-              <p className="mt-1 text-sm text-slate-400">Active tickets sorted by urgency — critical first.</p>
+              <h2 className="text-xl font-semibold text-white">{t('dashboard.agentQueue')}</h2>
+              <p className="mt-1 text-sm text-slate-400">{t('dashboard.agentQueueSubtitle')}</p>
             </div>
             <Link className="text-sm text-sky-300 hover:text-sky-200" href="/tickets?status=open">
-              View all active
+              {t('dashboard.viewAllActive')}
             </Link>
           </div>
 
@@ -172,11 +183,11 @@ export default async function DashboardPage() {
             <table className="min-w-full divide-y divide-slate-800 text-sm text-slate-200">
               <thead>
                 <tr className="text-left text-slate-400">
-                  <th className="pb-3 pr-4 font-medium">Title</th>
-                  <th className="pb-3 pr-4 font-medium">Priority</th>
-                  <th className="pb-3 pr-4 font-medium">Status</th>
-                  <th className="pb-3 pr-4 font-medium">Category</th>
-                  <th className="pb-3 font-medium">Updated</th>
+                  <th className="pb-3 pr-4 font-medium">{t('dashboard.tableTitle')}</th>
+                  <th className="pb-3 pr-4 font-medium">{t('dashboard.tablePriority')}</th>
+                  <th className="pb-3 pr-4 font-medium">{t('dashboard.tableStatus')}</th>
+                  <th className="pb-3 pr-4 font-medium">{t('dashboard.tableCategory')}</th>
+                  <th className="pb-3 font-medium">{t('dashboard.tableUpdated')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-900">
@@ -188,13 +199,13 @@ export default async function DashboardPage() {
                       </Link>
                     </td>
                     <td className="py-3 pr-4">
-                      <Badge className={priorityClasses[ticket.priority]}>{getPriorityLabel(ticket.priority)}</Badge>
+                      <Badge className={priorityClasses[ticket.priority]}>{t(`common.priority.${ticket.priority}`)}</Badge>
                     </td>
                     <td className="py-3 pr-4">
                       <TicketStatusBadge status={ticket.status} />
                     </td>
-                    <td className="py-3 pr-4 text-slate-400">{ticket.category || 'General'}</td>
-                    <td className="py-3 text-slate-400">{formatDate(ticket.updated_at)}</td>
+                    <td className="py-3 pr-4 text-slate-400">{getCategoryLabel(ticket.category)}</td>
+                    <td className="py-3 text-slate-400">{formatDate(ticket.updated_at, locale)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -207,26 +218,26 @@ export default async function DashboardPage() {
         <div className="grid gap-4 md:grid-cols-2">
           <Card className="space-y-4">
             <div>
-              <h2 className="text-xl font-semibold text-white">Avg. resolution time</h2>
-              <p className="mt-1 text-sm text-slate-400">Based on tickets resolved in the last 30 days.</p>
+              <h2 className="text-xl font-semibold text-white">{t('dashboard.avgResolutionTime')}</h2>
+              <p className="mt-1 text-sm text-slate-400">{t('dashboard.avgResolutionTimeSubtitle')}</p>
             </div>
             <p className="text-4xl font-semibold text-white">
               {avgResolutionHours !== null ? `${avgResolutionHours}h` : '—'}
             </p>
-            <p className="text-sm text-slate-500">{resolvedTickets.length} tickets resolved in last 30 days</p>
+            <p className="text-sm text-slate-500">{t('dashboard.resolvedCount', { count: resolvedTickets.length })}</p>
           </Card>
 
           {topAgentEntries.length > 0 ? (
             <Card className="space-y-4">
               <div>
-                <h2 className="text-xl font-semibold text-white">Resolved by agent</h2>
-                <p className="mt-1 text-sm text-slate-400">Top resolvers in the last 30 days.</p>
+                <h2 className="text-xl font-semibold text-white">{t('dashboard.resolvedByAgent')}</h2>
+                <p className="mt-1 text-sm text-slate-400">{t('dashboard.resolvedByAgentSubtitle')}</p>
               </div>
               <ul className="space-y-2">
                 {topAgentEntries.map(([agentId, count]) => (
                   <li key={agentId} className="flex items-center justify-between text-sm">
                     <span className="text-slate-300 font-mono text-xs truncate max-w-[200px]">
-                      {agentId === 'unassigned' ? 'Unassigned' : agentId}
+                      {agentId === 'unassigned' ? t('dashboard.unassigned') : agentId}
                     </span>
                     <span className="font-semibold text-white">{count}</span>
                   </li>
@@ -239,9 +250,9 @@ export default async function DashboardPage() {
 
       <section className="space-y-4">
         <div className="flex items-center justify-between gap-4">
-          <h2 className="text-xl font-semibold text-white">Recent tickets</h2>
+          <h2 className="text-xl font-semibold text-white">{t('dashboard.recentTickets')}</h2>
           <Link className="text-sm text-sky-300 hover:text-sky-200" href="/tickets">
-            View all
+            {t('dashboard.viewAll')}
           </Link>
         </div>
         <TicketList tickets={tickets} />

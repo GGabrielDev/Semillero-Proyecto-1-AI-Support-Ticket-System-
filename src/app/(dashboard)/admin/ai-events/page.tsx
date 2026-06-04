@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
 import { getAuthContext, isAgentOrAdmin } from '@/lib/auth';
 import { capitalizeWords, formatDate } from '@/lib/utils';
+import { getRequestTranslator } from '@/lib/i18n/server';
 import type { Database } from '@/types/database.types';
 
 type AiEventRow = Pick<
@@ -43,11 +44,13 @@ export default async function AiEventsPage({ searchParams }: AiEventsPageProps) 
   const events = (data ?? []) as AiEventRow[];
   const totalPages = Math.max(1, Math.ceil((count ?? 0) / PAGE_SIZE));
 
+  const { t, locale } = await getRequestTranslator();
+
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-semibold text-white">AI events</h1>
-        <p className="mt-2 text-sm text-slate-400">Review provider calls, latency, and success rates for ticket AI workflows.</p>
+        <h1 className="text-3xl font-semibold text-white">{t('admin.aiEventsTitle')}</h1>
+        <p className="mt-2 text-sm text-slate-400">{t('admin.aiEventsSubtitle')}</p>
       </div>
 
       <Card>
@@ -56,19 +59,19 @@ export default async function AiEventsPage({ searchParams }: AiEventsPageProps) 
             <table className="min-w-full divide-y divide-slate-800 text-sm text-slate-200">
               <thead>
                 <tr className="text-left text-slate-400">
-                  <th className="pb-3 pr-4 font-medium">Created</th>
-                  <th className="pb-3 pr-4 font-medium">Type</th>
-                  <th className="pb-3 pr-4 font-medium">Ticket</th>
-                  <th className="pb-3 pr-4 font-medium">Provider</th>
-                  <th className="pb-3 pr-4 font-medium">Model</th>
-                  <th className="pb-3 pr-4 font-medium">Latency</th>
-                  <th className="pb-3 font-medium">Status</th>
+                  <th className="pb-3 pr-4 font-medium">{t('admin.created')}</th>
+                  <th className="pb-3 pr-4 font-medium">{t('admin.type')}</th>
+                  <th className="pb-3 pr-4 font-medium">{t('admin.ticket')}</th>
+                  <th className="pb-3 pr-4 font-medium">{t('admin.provider')}</th>
+                  <th className="pb-3 pr-4 font-medium">{t('admin.model')}</th>
+                  <th className="pb-3 pr-4 font-medium">{t('admin.latency')}</th>
+                  <th className="pb-3 font-medium">{t('admin.status')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-900">
                 {events.map((event) => (
                   <tr key={`${event.created_at}-${event.ticket_id}-${event.event_type}`}>
-                    <td className="py-4 pr-4 text-slate-400">{formatDate(event.created_at)}</td>
+                    <td className="py-4 pr-4 text-slate-400">{formatDate(event.created_at, locale)}</td>
                     <td className="py-4 pr-4">{capitalizeWords(event.event_type)}</td>
                     <td className="py-4 pr-4 text-slate-400">{event.ticket_id ?? '—'}</td>
                     <td className="py-4 pr-4">{event.provider}</td>
@@ -76,7 +79,7 @@ export default async function AiEventsPage({ searchParams }: AiEventsPageProps) 
                     <td className="py-4 pr-4">{event.latency_ms ? `${event.latency_ms} ms` : '—'}</td>
                     <td className="py-4">
                       <Badge className={event.success ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-200' : 'border-rose-500/30 bg-rose-500/10 text-rose-200'}>
-                        {event.success ? 'Success' : 'Failed'}
+                        {event.success ? t('admin.success') : t('admin.failed')}
                       </Badge>
                     </td>
                   </tr>
@@ -85,13 +88,13 @@ export default async function AiEventsPage({ searchParams }: AiEventsPageProps) 
             </table>
           </div>
         ) : (
-          <p className="text-sm text-slate-400">No AI events found yet.</p>
+          <p className="text-sm text-slate-400">{t('admin.noAiEvents')}</p>
         )}
       </Card>
 
       <div className="flex items-center justify-between gap-4 text-sm text-slate-400">
         <span>
-          Page {currentPage} of {totalPages}
+          {t('tickets.pageIndicator', { page: String(currentPage), totalPages: String(totalPages) })}
         </span>
         <div className="flex gap-3">
           <Link
@@ -101,7 +104,7 @@ export default async function AiEventsPage({ searchParams }: AiEventsPageProps) 
               query: { ...resolvedSearchParams, page: String(Math.max(1, currentPage - 1)) },
             }}
           >
-            Previous
+            {t('tickets.previous')}
           </Link>
           <Link
             className={currentPage >= totalPages ? 'pointer-events-none opacity-50' : 'text-sky-300 hover:text-sky-200'}
@@ -110,7 +113,7 @@ export default async function AiEventsPage({ searchParams }: AiEventsPageProps) 
               query: { ...resolvedSearchParams, page: String(Math.min(totalPages, currentPage + 1)) },
             }}
           >
-            Next
+            {t('tickets.next')}
           </Link>
         </div>
       </div>

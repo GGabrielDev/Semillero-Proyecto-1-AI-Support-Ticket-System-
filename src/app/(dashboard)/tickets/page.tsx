@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/Input';
 import { createClient } from '@/lib/supabase/server';
 import { TicketPrioritySchema, TicketStatusSchema } from '@/lib/validations';
 import { toSearchPattern } from '@/lib/utils';
+import { getRequestTranslator } from '@/lib/i18n/server';
 import type { Ticket } from '@/types/ticket';
 
 type TicketsPageProps = {
@@ -63,15 +64,17 @@ export default async function TicketsPage({ searchParams }: TicketsPageProps) {
   const tickets = (data ?? []) as Ticket[];
   const totalPages = Math.max(1, Math.ceil((count ?? 0) / PAGE_SIZE));
 
+  const { t } = await getRequestTranslator();
+
   return (
     <div className="space-y-8">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-semibold text-white">Tickets</h1>
-          <p className="mt-2 text-sm text-slate-400">Filter issues by state, priority, and free-text search.</p>
+          <h1 className="text-3xl font-semibold text-white">{t('tickets.title')}</h1>
+          <p className="mt-2 text-sm text-slate-400">{t('tickets.subtitle')}</p>
         </div>
         <Link href="/tickets/new">
-          <Button>Create ticket</Button>
+          <Button>{t('tickets.createTicket')}</Button>
         </Link>
       </div>
 
@@ -79,14 +82,14 @@ export default async function TicketsPage({ searchParams }: TicketsPageProps) {
         <form className="grid gap-4 md:grid-cols-[1.5fr_1fr_1fr_auto] md:items-end" method="GET">
           <div className="space-y-2">
             <label className="text-sm font-medium text-slate-200" htmlFor="q">
-              Search
+              {t('tickets.search')}
             </label>
-            <Input defaultValue={q} id="q" name="q" placeholder="Search title or description" />
+            <Input defaultValue={q} id="q" name="q" placeholder={t('tickets.searchPlaceholder')} />
           </div>
 
           <div className="space-y-2">
             <label className="text-sm font-medium text-slate-200" htmlFor="status">
-              Status
+              {t('tickets.status')}
             </label>
             <select
               className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100"
@@ -94,17 +97,17 @@ export default async function TicketsPage({ searchParams }: TicketsPageProps) {
               id="status"
               name="status"
             >
-              <option value="">All</option>
-              <option value="open">Open</option>
-              <option value="in_progress">In progress</option>
-              <option value="resolved">Resolved</option>
-              <option value="closed">Closed</option>
+              <option value="">{t('tickets.all')}</option>
+              <option value="open">{t('common.status.open')}</option>
+              <option value="in_progress">{t('common.status.in_progress')}</option>
+              <option value="resolved">{t('common.status.resolved')}</option>
+              <option value="closed">{t('common.status.closed')}</option>
             </select>
           </div>
 
           <div className="space-y-2">
             <label className="text-sm font-medium text-slate-200" htmlFor="priority">
-              Priority
+              {t('tickets.priority')}
             </label>
             <select
               className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100"
@@ -112,15 +115,15 @@ export default async function TicketsPage({ searchParams }: TicketsPageProps) {
               id="priority"
               name="priority"
             >
-              <option value="">All</option>
-              <option value="low">Low</option>
-              <option value="medium">Medium</option>
-              <option value="high">High</option>
-              <option value="critical">Critical</option>
+              <option value="">{t('tickets.all')}</option>
+              <option value="low">{t('common.priority.low')}</option>
+              <option value="medium">{t('common.priority.medium')}</option>
+              <option value="high">{t('common.priority.high')}</option>
+              <option value="critical">{t('common.priority.critical')}</option>
             </select>
           </div>
 
-          <Button type="submit">Apply filters</Button>
+          <Button type="submit">{t('tickets.applyFilters')}</Button>
           <Link
             href={{
               pathname: '/tickets',
@@ -133,7 +136,7 @@ export default async function TicketsPage({ searchParams }: TicketsPageProps) {
             }}
           >
             <Button type="button" variant="secondary">
-              {sort === 'priority' ? 'Sort: Priority' : 'Sort: Newest'}
+              {sort === 'priority' ? t('tickets.sortPriority') : t('tickets.sortNewest')}
             </Button>
           </Link>
         </form>
@@ -143,7 +146,7 @@ export default async function TicketsPage({ searchParams }: TicketsPageProps) {
 
       <div className="flex items-center justify-between gap-4 text-sm text-slate-400">
         <span>
-          Page {currentPage} of {totalPages}
+          {t('tickets.pageIndicator', { page: String(currentPage), totalPages: String(totalPages) })}
         </span>
         <div className="flex gap-3">
           <Link
@@ -153,7 +156,7 @@ export default async function TicketsPage({ searchParams }: TicketsPageProps) {
               query: { ...resolvedSearchParams, page: String(Math.max(1, currentPage - 1)) },
             }}
           >
-            Previous
+            {t('tickets.previous')}
           </Link>
           <Link
             className={currentPage >= totalPages ? 'pointer-events-none opacity-50' : 'text-sky-300 hover:text-sky-200'}
@@ -162,7 +165,7 @@ export default async function TicketsPage({ searchParams }: TicketsPageProps) {
               query: { ...resolvedSearchParams, page: String(Math.min(totalPages, currentPage + 1)) },
             }}
           >
-            Next
+            {t('tickets.next')}
           </Link>
         </div>
       </div>
