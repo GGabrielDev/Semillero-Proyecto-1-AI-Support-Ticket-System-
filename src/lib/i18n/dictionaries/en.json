@@ -221,5 +221,15 @@
     "roleAdmin": "Admin",
     "cannotChangeOwnRole": "You cannot change your own role.",
     "unableToUpdateRole": "Unable to update user role."
+  },
+  "validation": {
+    "emailInvalid": "Enter a valid email address.",
+    "passwordRequired": "Password is required.",
+    "passwordMin": "Password must be at least 8 characters long.",
+    "fullNameRequired": "Full name is required.",
+    "titleMin": "Title must be at least 5 characters long.",
+    "descriptionMin": "Description must be at least 20 characters long.",
+    "commentRequired": "Comment is required.",
+    "commentTooLong": "Comment is too long."
   }
 }

@@ -56,7 +56,7 @@ export default function LoginPage() {
             {t('auth.email')}
           </label>
           <Input id="email" type="email" {...register('email')} />
-          {errors.email ? <p className="text-sm text-rose-300">{errors.email.message}</p> : null}
+          {errors.email ? <p className="text-sm text-rose-300">{t(errors.email.message!)}</p> : null}
         </div>
 
         <div className="space-y-2">
@@ -64,7 +64,7 @@ export default function LoginPage() {
             {t('auth.password')}
           </label>
           <Input id="password" type="password" {...register('password')} />
-          {errors.password ? <p className="text-sm text-rose-300">{errors.password.message}</p> : null}
+          {errors.password ? <p className="text-sm text-rose-300">{t(errors.password.message!)}</p> : null}
         </div>
 
         {error ? <p className="text-sm text-rose-300">{error}</p> : null}

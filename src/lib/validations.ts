@@ -6,8 +6,8 @@ export const UserRoleSchema = z.enum(['user', 'agent', 'admin']);
 export const PendingAiActionTypeSchema = z.enum(['escalate', 'close', 'assign', 'request_info']);
 
 export const CreateTicketSchema = z.object({
-  title: z.string().min(5, 'Title must be at least 5 characters long.'),
-  description: z.string().min(20, 'Description must be at least 20 characters long.'),
+  title: z.string().min(5, 'validation.titleMin'),
+  description: z.string().min(20, 'validation.descriptionMin'),
   category: z.string().trim().max(50).optional().or(z.literal('')),
 });
 
@@ -22,7 +22,7 @@ export const UpdateTicketSchema = z
   });
 
 export const CreateCommentSchema = z.object({
-  content: z.string().trim().min(1, 'Comment is required.').max(5000, 'Comment is too long.'),
+  content: z.string().trim().min(1, 'validation.commentRequired').max(5000, 'validation.commentTooLong'),
   is_internal: z.boolean().optional().default(false),
 });
 
@@ -40,12 +40,12 @@ export const UpdateUserRoleSchema = z.object({
 });
 
 export const LoginSchema = z.object({
-  email: z.string().email('Enter a valid email address.'),
-  password: z.string().min(1, 'Password is required.'),
+  email: z.string().email('validation.emailInvalid'),
+  password: z.string().min(1, 'validation.passwordRequired'),
 });
 
 export const RegisterSchema = z.object({
-  email: z.string().email('Enter a valid email address.'),
-  password: z.string().min(8, 'Password must be at least 8 characters long.'),
-  full_name: z.string().min(2, 'Full name is required.'),
+  email: z.string().email('validation.emailInvalid'),
+  password: z.string().min(8, 'validation.passwordMin'),
+  full_name: z.string().min(2, 'validation.fullNameRequired'),
 });

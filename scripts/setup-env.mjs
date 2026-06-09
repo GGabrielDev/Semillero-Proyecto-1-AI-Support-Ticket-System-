@@ -100,6 +100,16 @@ const REQUIRED = [
     hint: 'Generate one using: openssl rand -hex 32\n  Required in production to encrypt secure credentials at rest.',
     optional: process.env.NODE_ENV !== 'production',
   },
+  {
+    key: 'N8N_SYSTEM_EMAIL',
+    description: 'System user email for n8n automated actions',
+    hint: 'This account will be created to author updates and comments induced by n8n.\n  Example: n8n-bot@yourdomain.com',
+  },
+  {
+    key: 'N8N_SYSTEM_PASSWORD',
+    description: 'Password for the n8n system user',
+    hint: 'Managed password for the n8n bot account. Please use a secure string.',
+  },
 ];
 
 const AI_GROUP = [

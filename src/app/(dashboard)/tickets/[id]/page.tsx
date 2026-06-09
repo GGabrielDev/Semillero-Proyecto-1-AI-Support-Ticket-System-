@@ -146,11 +146,11 @@ export default async function TicketDetailPage({ params }: { params: Promise<{ i
                   <div className="mt-3 text-sm leading-6 text-slate-300">
                     <ReactMarkdown
                       components={{
-                        p: ({ node: _node, ...props }) => <p className="mb-2 last:mb-0" {...props} />,
-                        ul: ({ node: _node, ...props }) => <ul className="list-disc pl-5 mb-2" {...props} />,
-                        ol: ({ node: _node, ...props }) => <ol className="list-decimal pl-5 mb-2" {...props} />,
-                        li: ({ node: _node, ...props }) => <li className="mb-1" {...props} />,
-                        a: ({ node: _node, ...props }) => <a className="text-sky-400 hover:underline" target="_blank" rel="noopener noreferrer" {...props} />,
+                        p: ({ node: _node, ...props }: { node?: any }) => <p className="mb-2 last:mb-0" {...props} />,
+                        ul: ({ node: _node, ...props }: { node?: any }) => <ul className="list-disc pl-5 mb-2" {...props} />,
+                        ol: ({ node: _node, ...props }: { node?: any }) => <ol className="list-decimal pl-5 mb-2" {...props} />,
+                        li: ({ node: _node, ...props }: { node?: any }) => <li className="mb-1" {...props} />,
+                        a: ({ node: _node, ...props }: { node?: any }) => <a className="text-sky-400 hover:underline" target="_blank" rel="noopener noreferrer" {...props} />,
                         code: ({ node: _node, className, children, ...props }: { node?: unknown; className?: string; children?: React.ReactNode }) => {
                           const match = /language-(\w+)/.exec(className || '');
                           const inline = !match;

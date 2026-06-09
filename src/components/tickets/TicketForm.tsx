@@ -77,7 +77,7 @@ export function TicketForm() {
           {t('tickets.fieldTitle')}
         </label>
         <Input id="title" placeholder={t('tickets.titlePlaceholder')} {...register('title')} />
-        {errors.title ? <p className="text-sm text-rose-300">{errors.title.message}</p> : null}
+        {errors.title ? <p className="text-sm text-rose-300">{t(errors.title.message!)}</p> : null}
       </div>
 
       <div className="space-y-2">
@@ -112,7 +112,7 @@ export function TicketForm() {
           {t('tickets.fieldDescription')}
         </label>
         <Textarea id="description" placeholder={t('tickets.descriptionPlaceholder')} {...register('description')} />
-        {errors.description ? <p className="text-sm text-rose-300">{errors.description.message}</p> : null}
+        {errors.description ? <p className="text-sm text-rose-300">{t(errors.description.message!)}</p> : null}
       </div>
 
       {error ? <p className="text-sm text-rose-300">{error}</p> : null}

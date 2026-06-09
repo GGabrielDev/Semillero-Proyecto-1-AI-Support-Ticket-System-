@@ -26,16 +26,15 @@ const MOCK_PAYLOADS: MockPayloads = {
     title: "Cannot login to client portal",
     status: "resolved",
     priority: "medium",
-    createdBy: "mock-uuid-user-999",
+    updatedBy: "mock-uuid-user-999",
     creatorEmail: "john.doe@example.com",
-    updatedBy: "agent.smith@example.com"
+    lifecycleStatus: "ticket_status_changed",
+    correlationId: "mock-uuid-ticket-101",
+    updatesEvent: "ticket_status_changed"
   },
   high_priority_ticket: {
     ticketId: "mock-uuid-ticket-202",
-    title: "Payment gateway offline — API returning 504 gateway timeout",
     priority: "critical",
-    createdBy: "mock-uuid-user-888",
-    creatorEmail: "billing@majorclient.com",
     riskLevel: "critical",
     summary: "The main payment processor gateway is unresponsive. All checkouts are failing with 504 errors.",
     lifecycleStatus: "high_priority_detected",
@@ -44,26 +43,22 @@ const MOCK_PAYLOADS: MockPayloads = {
   },
   ai_action_required: {
     ticketId: "mock-uuid-ticket-202",
-    title: "Payment gateway offline — API returning 504 gateway timeout",
-    priority: "critical",
-    createdBy: "mock-uuid-user-888",
-    creatorEmail: "billing@majorclient.com",
     nextAction: "escalate",
-    riskLevel: "critical",
     summary: "Payment processor checkout failure requires immediate engineering escalation.",
+    riskLevel: "critical",
     lifecycleStatus: "ai_action_required",
     correlationId: "mock-uuid-ticket-202",
     updatesEvent: "ticket_created"
   },
   ai_action_decided: {
+    actionId: "mock-uuid-action-555",
     ticketId: "mock-uuid-ticket-202",
-    title: "Payment gateway offline — API returning 504 gateway timeout",
-    priority: "critical",
-    createdBy: "mock-uuid-user-888",
-    creatorEmail: "billing@majorclient.com",
     actionType: "escalate",
     decision: "approved",
-    decidedBy: "admin.chief@example.com"
+    decidedBy: "mock-uuid-user-999",
+    lifecycleStatus: "ai_action_decided",
+    correlationId: "mock-uuid-ticket-202",
+    updatesEvent: "ai_action_required"
   },
   daily_summary: {
     totalOpenTickets: 3,

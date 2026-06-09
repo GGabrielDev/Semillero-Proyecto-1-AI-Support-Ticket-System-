@@ -1,5 +1,9 @@
 export async function triggerN8nWorkflow(event: string, payload: Record<string, unknown>) {
-  const url = process.env.N8N_WEBHOOK_URL;
+  let url = process.env.N8N_WEBHOOK_URL;
+
+  if (event === 'user_created' && process.env.N8N_WELCOME_WEBHOOK_URL) {
+    url = process.env.N8N_WELCOME_WEBHOOK_URL;
+  }
 
   if (!url) {
     return;

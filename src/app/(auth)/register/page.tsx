@@ -69,7 +69,7 @@ export default function RegisterPage() {
             {t('auth.fullName')}
           </label>
           <Input id="full_name" {...register('full_name')} />
-          {errors.full_name ? <p className="text-sm text-rose-300">{errors.full_name.message}</p> : null}
+          {errors.full_name ? <p className="text-sm text-rose-300">{t(errors.full_name.message!)}</p> : null}
         </div>
 
         <div className="space-y-2">
@@ -77,7 +77,7 @@ export default function RegisterPage() {
             {t('auth.email')}
           </label>
           <Input id="email" type="email" {...register('email')} />
-          {errors.email ? <p className="text-sm text-rose-300">{errors.email.message}</p> : null}
+          {errors.email ? <p className="text-sm text-rose-300">{t(errors.email.message!)}</p> : null}
         </div>
 
         <div className="space-y-2">
@@ -85,7 +85,7 @@ export default function RegisterPage() {
             {t('auth.password')}
           </label>
           <Input id="password" type="password" {...register('password')} />
-          {errors.password ? <p className="text-sm text-rose-300">{errors.password.message}</p> : null}
+          {errors.password ? <p className="text-sm text-rose-300">{t(errors.password.message!)}</p> : null}
         </div>
 
         {error ? <p className="text-sm text-rose-300">{error}</p> : null}
