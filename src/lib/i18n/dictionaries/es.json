@@ -48,7 +48,9 @@
     "setupAccess": "Configura el acceso a tu espacio de soporte.",
     "fullName": "Nombre completo",
     "alreadyAccount": "¿Ya tienes una cuenta?",
-    "accountCreated": "Cuenta creada. Revisa tu bandeja de entrada si la confirmación por correo está habilitada, o continúa para iniciar sesión."
+    "accountCreated": "Cuenta creada. Revisa tu bandeja de entrada si la confirmación por correo está habilitada, o continúa para iniciar sesión.",
+    "verifyEmailTitle": "Verifica tu correo",
+    "verifyEmailMessage": "Hemos enviado un enlace de confirmación a tu correo electrónico. Por favor, revísalo para activar tu cuenta."
   },
   "header": {
     "welcomeBack": "Bienvenido de nuevo",

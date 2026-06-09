@@ -68,8 +68,10 @@ export default async function TicketDetailPage({ params }: { params: Promise<{ i
     return translation === key ? category : translation;
   };
 
+  const isOperator = isAgentOrAdmin(profile?.role);
+
   return (
-    <div className="grid gap-6 xl:grid-cols-[1.4fr_0.8fr]">
+    <div className={isOperator ? "grid gap-6 xl:grid-cols-[1.4fr_0.8fr]" : "mx-auto max-w-4xl space-y-6"}>
       <div className="space-y-6">
         <Card className="space-y-5">
           <div className="flex flex-wrap items-start justify-between gap-4">
@@ -181,20 +183,19 @@ export default async function TicketDetailPage({ params }: { params: Promise<{ i
           )}
         </Card>
 
-        <CommentForm canCreateInternal={isAgentOrAdmin(profile?.role)} ticketId={ticket.id} />
+        <CommentForm canCreateInternal={isOperator} ticketId={ticket.id} />
       </div>
 
-      <div className="space-y-6">
-        {isAgentOrAdmin(profile?.role) ? (
+      {isOperator && (
+        <div className="space-y-6">
           <TicketActionsPanel
             assignedTo={ticket.assigned_to}
             currentPriority={ticket.priority}
             currentStatus={ticket.status}
             currentUserId={user.id}
             ticketId={ticket.id}
+            currentUserRole={profile?.role ?? 'user'}
           />
-        ) : null}
-        {isAgentOrAdmin(profile?.role) ? (
           <AiSuggestionPanel
             aiSuggestedPriority={ticket.ai_suggested_priority}
             aiSuggestedReply={ticket.ai_suggested_reply}
@@ -207,8 +208,8 @@ export default async function TicketDetailPage({ params }: { params: Promise<{ i
             ticketId={ticket.id}
             title={ticket.title}
           />
-        ) : null}
-      </div>
+        </div>
+      )}
 
       <TicketRealtimeSync ticketId={ticket.id} />
     </div>

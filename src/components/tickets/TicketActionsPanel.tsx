@@ -15,6 +15,7 @@ type TicketActionsPanelProps = {
   currentPriority: TicketPriority;
   assignedTo: string | null;
   currentUserId: string;
+  currentUserRole: string;
 };
 
 export function TicketActionsPanel({
@@ -23,6 +24,7 @@ export function TicketActionsPanel({
   currentPriority,
   assignedTo,
   currentUserId,
+  currentUserRole,
 }: TicketActionsPanelProps) {
   const router = useRouter();
   const { t } = useI18n();
@@ -166,8 +168,9 @@ export function TicketActionsPanel({
           {t('tickets.assignee')}
         </label>
         <select
-          className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 transition-colors duration-200"
+          className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 transition-colors duration-200 disabled:opacity-60 disabled:cursor-not-allowed"
           id="ticket-assignee"
+          disabled={currentUserRole !== 'admin'}
           onChange={(event) => setAssignedToId(event.target.value === 'unassigned' ? null : event.target.value)}
           value={assignedToId ?? 'unassigned'}
         >

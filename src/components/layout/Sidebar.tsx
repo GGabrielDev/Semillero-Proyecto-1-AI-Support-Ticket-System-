@@ -19,6 +19,7 @@ export function Sidebar({ role }: { role: UserRole }) {
       ? [
           { href: '/dashboard', label: t('sidebar.overview') },
           { href: '/tickets', label: t('sidebar.tickets') },
+          { href: '/admin/ai-events', label: t('sidebar.aiEvents') },
         ]
       : [
           // admin sees everything

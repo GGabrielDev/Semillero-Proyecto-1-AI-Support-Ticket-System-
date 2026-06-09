@@ -6,7 +6,14 @@ export async function POST(request: Request) {
   const providedSecret = request.headers.get('x-webhook-secret');
 
   // Verify webhook secret if configured
-  if (secret && providedSecret !== secret) {
+  if (!secret) {
+    console.warn('[Webhook] Warning: N8N_WEBHOOK_SECRET is not configured. Webhook signature check is bypassed.');
+  } else if (providedSecret !== secret) {
+    const expectedPrefix = secret.length > 4 ? `${secret.slice(0, 3)}...` : '***';
+    const providedPrefix = providedSecret
+      ? (providedSecret.length > 4 ? `${providedSecret.slice(0, 3)}...` : '***')
+      : 'none';
+    console.error(`[Webhook] Verification failed. Expected prefix: ${expectedPrefix}, Provided: ${providedPrefix}`);
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 

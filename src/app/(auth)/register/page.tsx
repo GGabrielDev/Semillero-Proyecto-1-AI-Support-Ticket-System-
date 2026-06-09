@@ -2,7 +2,6 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -17,10 +16,10 @@ import { RegisterSchema } from '@/lib/validations';
 type RegisterValues = z.infer<typeof RegisterSchema>;
 
 export default function RegisterPage() {
-  const router = useRouter();
   const { t } = useI18n();
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [isRegistered, setIsRegistered] = useState(false);
   const {
     register,
     handleSubmit,
@@ -50,10 +49,28 @@ export default function RegisterPage() {
       return;
     }
 
-    setMessage(t('auth.accountCreated'));
-    router.push('/login');
-    router.refresh();
+    setIsRegistered(true);
   });
+
+  if (isRegistered) {
+    return (
+      <Card className="space-y-6">
+        <div>
+          <p className="text-sm font-semibold uppercase tracking-[0.3em] text-sky-300">{t('auth.getStarted')}</p>
+          <h1 className="mt-3 text-3xl font-semibold text-white">{t('auth.verifyEmailTitle')}</h1>
+          <p className="mt-4 text-sm text-slate-300 leading-relaxed">
+            {t('auth.verifyEmailMessage')}
+          </p>
+        </div>
+
+        <Link href="/login" passHref className="w-full block">
+          <Button className="w-full" type="button">
+            {t('auth.signIn')}
+          </Button>
+        </Link>
+      </Card>
+    );
+  }
 
   return (
     <Card className="space-y-6">

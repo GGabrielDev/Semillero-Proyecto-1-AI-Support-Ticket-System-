@@ -48,7 +48,9 @@
     "setupAccess": "Set up your support workspace access.",
     "fullName": "Full name",
     "alreadyAccount": "Already have an account?",
-    "accountCreated": "Account created. Check your inbox if email confirmation is enabled, or continue to sign in."
+    "accountCreated": "Account created. Check your inbox if email confirmation is enabled, or continue to sign in.",
+    "verifyEmailTitle": "Verify your email",
+    "verifyEmailMessage": "We have sent a verification link to your email. Please check your inbox to activate your account."
   },
   "header": {
     "welcomeBack": "Welcome back",

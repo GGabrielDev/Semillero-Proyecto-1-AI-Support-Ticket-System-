@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 
 import { Badge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
-import { getAuthContext, isAdmin } from '@/lib/auth';
+import { getAuthContext, isAgentOrAdmin } from '@/lib/auth';
 import { capitalizeWords, formatDate } from '@/lib/utils';
 import { getRequestTranslator } from '@/lib/i18n/server';
 import type { Database } from '@/types/database.types';
@@ -31,7 +31,7 @@ export default async function AiEventsPage({ searchParams }: AiEventsPageProps) 
     redirect('/login');
   }
 
-  if (!isAdmin(profile?.role)) {
+  if (!isAgentOrAdmin(profile?.role)) {
     redirect('/dashboard');
   }
 
