@@ -4,7 +4,7 @@ import { TicketList } from '@/components/tickets/TicketList';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
-import { createClient } from '@/lib/supabase/server';
+import { getAuthContext } from '@/lib/auth';
 import { TicketPrioritySchema, TicketStatusSchema } from '@/lib/validations';
 import { toSearchPattern } from '@/lib/utils';
 import { getRequestTranslator } from '@/lib/i18n/server';
@@ -33,7 +33,8 @@ export default async function TicketsPage({ searchParams }: TicketsPageProps) {
   const q = resolvedSearchParams.q?.trim() || '';
   const sort = resolvedSearchParams.sort === 'priority' ? 'priority' : 'date';
 
-  const supabase = await createClient();
+  const { supabase, profile } = await getAuthContext();
+  const role = profile?.role ?? 'user';
   let query = supabase
     .from('tickets')
     .select('*', { count: 'exact' })
@@ -73,9 +74,11 @@ export default async function TicketsPage({ searchParams }: TicketsPageProps) {
           <h1 className="text-3xl font-semibold text-white">{t('tickets.title')}</h1>
           <p className="mt-2 text-sm text-slate-400">{t('tickets.subtitle')}</p>
         </div>
-        <Link href="/tickets/new">
-          <Button>{t('tickets.createTicket')}</Button>
-        </Link>
+        {role !== 'agent' ? (
+          <Link href="/tickets/new">
+            <Button>{t('tickets.createTicket')}</Button>
+          </Link>
+        ) : null}
       </div>
 
       <Card>

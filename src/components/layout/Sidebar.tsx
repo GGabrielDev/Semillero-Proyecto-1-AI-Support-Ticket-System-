@@ -15,19 +15,21 @@ export function Sidebar({ role }: { role: UserRole }) {
         { href: '/tickets', label: t('sidebar.tickets') },
         { href: '/tickets/new', label: t('sidebar.newTicket') },
       ]
-    : [
-        { href: '/dashboard', label: t('sidebar.overview') },
-        { href: '/tickets', label: t('sidebar.tickets') },
-        { href: '/tickets/new', label: t('sidebar.newTicket') },
-        { href: '/admin/ai-events', label: t('sidebar.aiEvents') },
-        ...(role === 'admin'
-          ? [
-              { href: '/admin/ai-config', label: t('sidebar.aiConfig') || 'AI Config' },
-              { href: '/admin/n8n-test', label: t('sidebar.n8nTest') || 'n8n Integration' },
-              { href: '/admin/users', label: t('sidebar.admin') },
-            ]
-          : []),
-      ];
+    : role === 'agent'
+      ? [
+          { href: '/dashboard', label: t('sidebar.overview') },
+          { href: '/tickets', label: t('sidebar.tickets') },
+        ]
+      : [
+          // admin sees everything
+          { href: '/dashboard', label: t('sidebar.overview') },
+          { href: '/tickets', label: t('sidebar.tickets') },
+          { href: '/tickets/new', label: t('sidebar.newTicket') },
+          { href: '/admin/ai-events', label: t('sidebar.aiEvents') },
+          { href: '/admin/ai-config', label: t('sidebar.aiConfig') || 'AI Config' },
+          { href: '/admin/n8n-test', label: t('sidebar.n8nTest') || 'n8n Integration' },
+          { href: '/admin/users', label: t('sidebar.admin') },
+        ];
 
   return (
     <aside className="flex w-full flex-col border-b border-slate-800 bg-slate-950 px-6 py-6 lg:min-h-screen lg:w-72 lg:border-b-0 lg:border-r">

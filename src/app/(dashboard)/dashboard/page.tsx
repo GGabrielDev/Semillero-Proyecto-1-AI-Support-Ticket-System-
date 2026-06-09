@@ -114,9 +114,11 @@ export default async function DashboardPage() {
           <h1 className="text-3xl font-semibold text-white">{t('dashboard.title')}</h1>
           <p className="mt-2 text-sm text-slate-400">{t('dashboard.subtitle')}</p>
         </div>
-        <Link href="/tickets/new">
-          <Button>{t('dashboard.createTicket')}</Button>
-        </Link>
+        {profile?.role === 'admin' ? (
+          <Link href="/tickets/new">
+            <Button>{t('dashboard.createTicket')}</Button>
+          </Link>
+        ) : null}
       </div>
 
       <div className="grid gap-4 md:grid-cols-5">

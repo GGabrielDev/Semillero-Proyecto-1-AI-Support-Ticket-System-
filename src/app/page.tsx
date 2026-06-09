@@ -4,17 +4,19 @@ import { redirect } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { getRequestTranslator } from '@/lib/i18n/server';
-import { createClient } from '@/lib/supabase/server';
+import { getAuthContext } from '@/lib/auth';
 
 export default async function HomePage() {
   const { t } = await getRequestTranslator();
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { user, profile } = await getAuthContext();
 
   if (user) {
-    redirect('/dashboard');
+    const role = profile?.role ?? 'user';
+    if (role === 'user') {
+      redirect('/tickets');
+    } else {
+      redirect('/dashboard');
+    }
   }
 
   return (

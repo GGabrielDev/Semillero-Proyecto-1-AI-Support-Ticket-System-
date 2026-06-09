@@ -192,19 +192,20 @@ export default async function TicketDetailPage({ params }: { params: Promise<{ i
             ticketId={ticket.id}
           />
         ) : null}
-
-        <AiSuggestionPanel
-          aiSuggestedPriority={ticket.ai_suggested_priority}
-          aiSuggestedReply={ticket.ai_suggested_reply}
-          aiSummary={ticket.ai_summary}
-          comments={comments.map((comment) => comment.content)}
-          currentUserRole={profile?.role ?? 'user'}
-          description={ticket.description}
-          initialAnalysis={(ticket.ai_analysis_json as AiAnalysisResult | null) ?? null}
-          initialPendingActions={initialPendingActions}
-          ticketId={ticket.id}
-          title={ticket.title}
-        />
+        {isAgentOrAdmin(profile?.role) ? (
+          <AiSuggestionPanel
+            aiSuggestedPriority={ticket.ai_suggested_priority}
+            aiSuggestedReply={ticket.ai_suggested_reply}
+            aiSummary={ticket.ai_summary}
+            comments={comments.map((comment) => comment.content)}
+            currentUserRole={profile?.role ?? 'user'}
+            description={ticket.description}
+            initialAnalysis={(ticket.ai_analysis_json as AiAnalysisResult | null) ?? null}
+            initialPendingActions={initialPendingActions}
+            ticketId={ticket.id}
+            title={ticket.title}
+          />
+        ) : null}
       </div>
 
       <TicketRealtimeSync ticketId={ticket.id} />
