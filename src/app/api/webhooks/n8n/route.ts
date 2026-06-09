@@ -30,7 +30,7 @@ export async function POST(request: Request) {
     }
 
     let n8nUserId: string | null = null;
-    let { data: n8nProfile } = await adminClient
+    const { data: n8nProfile } = await adminClient
       .from('profiles')
       .select('id')
       .eq('email', systemEmail)
@@ -41,7 +41,7 @@ export async function POST(request: Request) {
     } else {
       // Auto-provision the n8n system user in Supabase auth and profiles
       const systemPassword = process.env.N8N_SYSTEM_PASSWORD || Math.random().toString(36).slice(-16);
-      const { data: authUser, error: createError } = await adminClient.auth.admin.createUser({
+      const { data: authUser, error: _createError } = await adminClient.auth.admin.createUser({
         email: systemEmail,
         password: systemPassword,
         email_confirm: true,
@@ -106,6 +106,7 @@ export async function POST(request: Request) {
 
       const { data, error } = await adminClient
         .from('tickets')
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         .update(updates as any)
         .eq('id', ticketId)
         .select('*')

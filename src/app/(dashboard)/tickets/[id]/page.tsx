@@ -38,7 +38,7 @@ export default async function TicketDetailPage({ params }: { params: Promise<{ i
 
   let commentsQuery = supabase
     .from('ticket_comments')
-    .select('*')
+    .select('*, author:profiles(id, email, full_name, avatar_url)')
     .eq('ticket_id', ticket.id)
     .order('created_at', { ascending: true });
 
@@ -133,7 +133,9 @@ export default async function TicketDetailPage({ params }: { params: Promise<{ i
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-2">
                       <p className="text-sm font-medium text-slate-200">
-                        {comment.is_internal ? t('tickets.internalNote') : t('tickets.comment')}
+                        {comment.author?.full_name ||
+                          comment.author?.email ||
+                          (comment.is_internal ? t('tickets.system') : t('tickets.n8nAutomation'))}
                       </p>
                       {comment.is_internal ? (
                         <Badge className="border-amber-500/30 bg-amber-500/10 text-amber-200">
@@ -146,11 +148,11 @@ export default async function TicketDetailPage({ params }: { params: Promise<{ i
                   <div className="mt-3 text-sm leading-6 text-slate-300">
                     <ReactMarkdown
                       components={{
-                        p: ({ node: _node, ...props }: { node?: any }) => <p className="mb-2 last:mb-0" {...props} />,
-                        ul: ({ node: _node, ...props }: { node?: any }) => <ul className="list-disc pl-5 mb-2" {...props} />,
-                        ol: ({ node: _node, ...props }: { node?: any }) => <ol className="list-decimal pl-5 mb-2" {...props} />,
-                        li: ({ node: _node, ...props }: { node?: any }) => <li className="mb-1" {...props} />,
-                        a: ({ node: _node, ...props }: { node?: any }) => <a className="text-sky-400 hover:underline" target="_blank" rel="noopener noreferrer" {...props} />,
+                        p: ({ node: _node, ...props }: { node?: unknown }) => <p className="mb-2 last:mb-0" {...props} />,
+                        ul: ({ node: _node, ...props }: { node?: unknown }) => <ul className="list-disc pl-5 mb-2" {...props} />,
+                        ol: ({ node: _node, ...props }: { node?: unknown }) => <ol className="list-decimal pl-5 mb-2" {...props} />,
+                        li: ({ node: _node, ...props }: { node?: unknown }) => <li className="mb-1" {...props} />,
+                        a: ({ node: _node, ...props }: { node?: unknown }) => <a className="text-sky-400 hover:underline" target="_blank" rel="noopener noreferrer" {...props} />,
                         code: ({ node: _node, className, children, ...props }: { node?: unknown; className?: string; children?: React.ReactNode }) => {
                           const match = /language-(\w+)/.exec(className || '');
                           const inline = !match;

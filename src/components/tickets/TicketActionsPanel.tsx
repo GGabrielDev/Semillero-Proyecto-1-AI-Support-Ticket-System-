@@ -1,12 +1,13 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { useI18n } from '@/lib/i18n/I18nProvider';
 import type { TicketPriority, TicketStatus } from '@/types/ticket';
+import type { AppUser } from '@/types/user';
 
 type TicketActionsPanelProps = {
   ticketId: string;
@@ -27,9 +28,44 @@ export function TicketActionsPanel({
   const { t } = useI18n();
   const [status, setStatus] = useState<TicketStatus>(currentStatus);
   const [priority, setPriority] = useState<TicketPriority>(currentPriority);
+  const [assignedToId, setAssignedToId] = useState<string | null>(assignedTo);
+  const [agents, setAgents] = useState<AppUser[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [isAssigning, setIsAssigning] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setStatus(currentStatus);
+  }, [currentStatus]);
+
+  useEffect(() => {
+    setPriority(currentPriority);
+  }, [currentPriority]);
+
+  useEffect(() => {
+    setAssignedToId(assignedTo);
+  }, [assignedTo]);
+
+  useEffect(() => {
+    let active = true;
+    async function fetchAgents() {
+      try {
+        const response = await fetch('/api/agents');
+        if (response.ok) {
+          const data = await response.json();
+          if (active && data?.agents) {
+            setAgents(data.agents);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch agents', err);
+      }
+    }
+    void fetchAgents();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const saveChanges = async () => {
     setError(null);
@@ -41,7 +77,7 @@ export function TicketActionsPanel({
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ status, priority }),
+        body: JSON.stringify({ status, priority, assigned_to: assignedToId }),
       });
       const payload = (await response.json().catch(() => null)) as { error?: string } | null;
 
@@ -75,6 +111,7 @@ export function TicketActionsPanel({
         throw new Error(payload?.error ?? t('tickets.unableToAssign'));
       }
 
+      setAssignedToId(currentUserId);
       router.refresh();
     } catch (caughtError) {
       setError(caughtError instanceof Error ? caughtError.message : t('tickets.unableToAssign'));
@@ -121,6 +158,25 @@ export function TicketActionsPanel({
           <option value="medium">{t('common.priority.medium')}</option>
           <option value="high">{t('common.priority.high')}</option>
           <option value="critical">{t('common.priority.critical')}</option>
+        </select>
+      </div>
+
+      <div className="space-y-2">
+        <label className="text-sm font-medium text-slate-200" htmlFor="ticket-assignee">
+          {t('tickets.assignee')}
+        </label>
+        <select
+          className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 transition-colors duration-200"
+          id="ticket-assignee"
+          onChange={(event) => setAssignedToId(event.target.value === 'unassigned' ? null : event.target.value)}
+          value={assignedToId ?? 'unassigned'}
+        >
+          <option value="unassigned">{t('tickets.unassignedOption')}</option>
+          {agents.map((agent) => (
+            <option key={agent.id} value={agent.id}>
+              {agent.full_name || agent.email}
+            </option>
+          ))}
         </select>
       </div>
 

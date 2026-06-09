@@ -37,3 +37,6 @@ next-env.d.ts
 
 # agents configuration
 .agents/
+
+# agent workspaces
+_workspace/

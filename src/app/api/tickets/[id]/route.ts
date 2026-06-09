@@ -6,7 +6,7 @@ import { triggerN8nWorkflow } from '@/lib/n8n';
 import { createNotification } from '@/lib/notifications';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { UpdateTicketSchema } from '@/lib/validations';
-import type { Ticket } from '@/types/ticket';
+import type { Ticket, TicketComment } from '@/types/ticket';
 
 const ParamsSchema = z.object({
   id: z.string().uuid('Invalid ticket id.'),
@@ -38,7 +38,7 @@ export async function GET(_: Request, context: { params: Promise<{ id: string }>
 
   let commentsQuery = supabase
     .from('ticket_comments')
-    .select('*')
+    .select('*, author:profiles(id, email, full_name, avatar_url)')
     .eq('ticket_id', ticket.id)
     .order('created_at', { ascending: true });
 
@@ -47,7 +47,7 @@ export async function GET(_: Request, context: { params: Promise<{ id: string }>
   }
 
   const { data: commentsData, error: commentsError } = await commentsQuery;
-  const comments = commentsData ?? [];
+  const comments = (commentsData ?? []) as TicketComment[];
 
   if (commentsError) {
     return NextResponse.json({ error: commentsError.message }, { status: 500 });
